@@ -3,6 +3,7 @@ from django.urls import path,include
 from API import views 
 
 urlpatterns = [
-    path('house/<int:houseid>/devices', views.devices), #all devices info...
+    path('@<str:houseid>/devices', views.devices),
+    path('@<str:houseid>', views.house),
     path('house/<int:houseid>/device/<int:deviceid>', views.device),
 ]

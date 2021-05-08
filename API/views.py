@@ -4,13 +4,20 @@ from rest_framework.parsers import JSONParser
 from rest_framework import status
  
 from API.models import *
-# from API.serializers import *
+from API.serializers import *
 from rest_framework.decorators import api_view
 # Create your views here.
 
+@api_view(['GET','PUT','DELETE'])
+def house(request, houseid:str):
+    if request.method == 'GET':
+        pass
+
 @api_view(['GET','POST','DELETE'])
-def device(request, houseid:int, deviceid:int):
+def device(request, houseid, deviceid:int):
     #double request
+    if (isinstance(houseid,int)):
+        pass
     if request.method == 'GET':
         #result = Device.objects.all()
         mortal = None
@@ -64,3 +71,21 @@ JsonDetailDevice = ({
             ],
             "length": 2
         })
+
+@api_view(['GET'])
+def house(request,houseid):
+    if request.method == 'GET':
+        house_data =  demohouse #JSONParser().parse(demohouse)
+        house_serializer = HouseSerializer(data=user_data)
+        if house_serializer.is_valid():
+            house_serializer.save()
+            return JsonResponse(house_serializer.data, status=status.HTTP_201_CREATED) 
+        return JsonResponse(house_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+demohouse = ({
+    "phoneNumber": "011234vsdf134",
+    "name": "asdfasasdfdf",
+    "password": "adsfasdf",
+    "address": "asfdasdfafs"
+})
