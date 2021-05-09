@@ -4,7 +4,7 @@ from rest_framework.parsers import JSONParser
 from rest_framework import status
  
 from API.models import *
-# from API.serializers import *
+from API.serializers import *
 from rest_framework.decorators import api_view
 # Create your views here.
 

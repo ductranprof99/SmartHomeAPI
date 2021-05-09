@@ -1,4 +1,6 @@
+
 from djongo import models
+
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.core.validators import int_list_validator
 
