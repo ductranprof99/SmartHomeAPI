@@ -89,11 +89,10 @@ DATABASES = {
         'ENGINE': 'djongo',
         'NAME': 'smarthome1dot0',
         'CLIENT': {
-           'host': os.environ.get("DATABASE_URL"),
+           'host': "mongodb+srv://Hao:khongco@cluster0.zx05d.mongodb.net/smarthome1dot0?retryWrites=true&w=majority",
         }
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
