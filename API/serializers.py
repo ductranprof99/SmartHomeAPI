@@ -2,8 +2,8 @@ from rest_framework import serializers
 from API.models import *
  
  
-class HouseSerializer(serializers.ModelSerializer):
+class HomeSerializer(serializers.ModelSerializer):
  
     class Meta:
-        model = House
+        model = Home
         fields = '__all__'

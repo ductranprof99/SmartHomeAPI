@@ -9,7 +9,25 @@ from rest_framework.decorators import api_view
 # Create your views here.
 
 @api_view(['GET'])
-def schelude(request, houseid:int, deviceid:int):
+def schelude(request,device):
     pass
 
+@api_view(['GET'])
+def home(request,home_id):
+    if request.method == 'GET':
+        # homes = Home.objects.all()
+        # homes = homes.filter(address="Ho chi minh")
+        # home_data = HomeSerializer(homes, many=True).data
+        #a = home_data[0]
+        #print(a)
+
+        # home = Home()
+        # devicee = {'device_name':'abba','description':'asfasdf','current_status':True,'automation_status':'asfas','mode':1,'schedule':None}
+        # home.devices = [devicee,devicee]
+        # home.house_name = 'asdfasf'
+        # home.address = 'asdfasf'
+        # home.save()
+        
+        print(Home.objects.all())
+        return JsonResponse({'a':'a'}, safe=False)
 
