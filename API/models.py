@@ -1,6 +1,5 @@
 
 from djongo import models
-
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.core.validators import int_list_validator
 
@@ -22,6 +21,7 @@ class Device(models.Model):
     description = models.CharField(max_length=50,blank=True,null=True)
     current_status = models.BooleanField(null=False,blank=False)
     automation_status = models.CharField(max_length=50,blank=True,null=True)
+    value = models.CharField(max_length=50,blank=True,null=True)
     mode = models.IntegerField(null=False,validators=[MaxValueValidator(3),MinValueValidator(1)])
     schedule = models.ArrayField(
         model_container=Schedule,
@@ -35,7 +35,7 @@ class Device(models.Model):
 
 class Home(models.Model):
     id = models.ObjectIdField(db_column="_id", primary_key=True)
-    house_name = models.CharField(max_length=30,blank=False,null=False)
+    home_name = models.CharField(max_length=30,blank=False,null=False)
     address =  models.CharField(max_length=100,blank=False,null=False)
     devices = models.ArrayField(
         model_container=Device,
@@ -54,5 +54,5 @@ class History(models.Model):
     
 class DevicesAdmin(models.Model):
     id = models.ObjectIdField(db_column="_id", primary_key=True)
-    house_id = models.CharField(max_length=30,blank=False,null=False)
+    home_id = models.CharField(max_length=30,blank=False,null=False)
     objects = models.DjongoManager()

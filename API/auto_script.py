@@ -1,0 +1,1 @@
+from SmartHomeAPI import connect
