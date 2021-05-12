@@ -7,7 +7,7 @@ from django.core.validators import int_list_validator
 
 
 class Schedule(models.Model):
-    _id = models.ObjectIdField(primary_key = True)
+    id = models.ObjectIdField(db_column="_id", primary_key=True)
     time_on = models.CharField(max_length=5,blank=True,null=True)
     time_off = models.CharField(max_length=5,blank=True,null=True)
     is_repeat = models.BooleanField(null=True)
@@ -18,6 +18,7 @@ class Schedule(models.Model):
 
 class Device(models.Model):
     device_name = models.CharField(max_length=30,blank=False,null=False)
+    feed_name =  models.CharField(max_length=30,blank=False,null=False)
     description = models.CharField(max_length=50,blank=True,null=True)
     current_status = models.BooleanField(null=False,blank=False)
     automation_status = models.CharField(max_length=50,blank=True,null=True)
@@ -33,6 +34,7 @@ class Device(models.Model):
 
 
 class Home(models.Model):
+    id = models.ObjectIdField(db_column="_id", primary_key=True)
     house_name = models.CharField(max_length=30,blank=False,null=False)
     address =  models.CharField(max_length=100,blank=False,null=False)
     devices = models.ArrayField(
@@ -44,8 +46,13 @@ class Home(models.Model):
 
 
 class History(models.Model):
-    _id = models.ObjectIdField(primary_key = True)
+    device_id = models.CharField(max_length=30,blank=False,null=False)
     time = models.CharField(max_length=30,blank=False,null=False)
     value = models.CharField(max_length=30,blank=False,null=False)
     mode =  models.BooleanField(blank=False,null=False)
+    objects = models.DjongoManager()
     
+class DevicesAdmin(models.Model):
+    id = models.ObjectIdField(db_column="_id", primary_key=True)
+    house_id = models.CharField(max_length=30,blank=False,null=False)
+    objects = models.DjongoManager()
