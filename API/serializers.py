@@ -3,7 +3,7 @@ from API.models import *
  
  
  
-class HomeUserSerializer(serializers.ModelSerializer):
+class HomeSerializer(serializers.ModelSerializer):
  
     class Meta:
         model = Home
