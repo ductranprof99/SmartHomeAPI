@@ -1,9 +1,22 @@
-
-from enum import unique
 from djongo import models
 from django.core.validators import MaxValueValidator, MinValueValidator
-from django.core.validators import int_list_validator
+from django.contrib.auth.models import AbstractUser
 
+
+class User(AbstractUser):
+    # Delete not use field
+    username = None
+    last_login = None
+    is_normaluser = None
+    is_superuser = None
+
+    password = models.CharField(max_length=100)
+    phone_number = models.CharField(max_length=100, unique=True)
+    USERNAME_FIELD = 'phone_number'
+    REQUIRED_FIELDS = []
+
+    def __str__(self):
+        return self.phone_number
 
 
 class Schedule(models.Model):
