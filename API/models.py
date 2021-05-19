@@ -68,6 +68,6 @@ class History(models.Model):
     objects = models.DjongoManager()
     
 class DevicesAdmin(models.Model):
-    _id = models.ObjectIdField(db_column="_id", primary_key=True)
-    home_id = models.CharField(max_length=30,blank=False,null=False)
+    
+    
     objects = models.DjongoManager()
