@@ -1,6 +1,6 @@
 import sys, os, time
 from Adafruit_IO import Client,Data,Feed,MQTTClient
-from mongo import *
+#from . import mongo
 ADAFRUIT_ADMIN_USERNAME = os.getenv('ADAFRUIT_ADMIN_USERNAME')
 ADAFRUIT_ADMIN_KEY = os.getenv('ADAFRUIT_IO_KEY')
 class AdaConnect():

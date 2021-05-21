@@ -8,8 +8,8 @@ history_table = db['API_device_history']
 device_table = db['API_deviceadmin']
 
 
-DEVICE_HISTORY_FORM = ['phone-number','feed-id','type','value','time']
-DEVICE_FORM = ['phone-number','inhouse-id','feed-name','type','status','create-time']
+DEVICE_HISTORY_FORM = ['phone_number','feed-id','type','value','time']
+DEVICE_FORM = ['phone-number','inhouse_id','feed-name','type','status','create-time']
 history_data = namedtuple('history_data',DEVICE_HISTORY_FORM)
 
 
@@ -35,7 +35,7 @@ class History:
         history_table.update_one(myquery, newvalues)
 
         try:
-            x = history_table.insert_one(mydict)
+            x = history_table.update_one(myquery,newvalues)
             return x
         except(Exception):
             return None
@@ -73,6 +73,63 @@ class History:
             return None
 
 
+
+class Device_admin:
+    '''
+    do something with history of device
+    '''
+    def insert(self,name,value,time):
+        similar = device_table.find_one({'feed-name':name},{'_id':1,'phone-number':1,'inhouse-id':0,'feed-name':0,'type':1,'status':0,'create-time':0})
+        data_input = dict(history_data(similar['phone-number'],similar['_id'],similar['type'],value,time)._asdict())
+        try:
+            history_table.insert_one(data_input)
+            return 1
+        except(Exception):
+            return 0
+
+    def update(self,name,value,time):
+        myquery = { "feed-name": name, 'time': time}
+        newvalues = { "$set": { "value": value } }
+
+        history_table.update_one(myquery, newvalues)
+
+        try:
+            x = history_table.update_one(myquery,newvalues)
+            return x
+        except(Exception):
+            return None
+    def delete_all(self):
+        '''
+        admin control, drop then recreate
+        '''
+        try:
+            history_table.drop()
+            history_table = db['API_device_history']
+            return 1
+        except(Exception):
+            return 0
+    def delete_1_in_1_device(self,name,time):
+        '''
+        admin and user can control, delete 1 row
+        '''
+        try:
+            myquery = { "feed-name": name, 'time': time}
+            history_table.delete_one(myquery)
+            return 1
+        except(Exception):
+            return None
+
+
+    def delete_all_in_1_device(self,name):
+        '''
+        admin and user can control, delete all history row in 1 device
+        '''
+        try:
+            myquery = { "feed-name": name}
+            history_table.delete_many(myquery)
+            return 1
+        except(Exception):
+            return None
 
 # convert to dictionary input = dict(history_data(...,...,...,...,...)._asdict())
 

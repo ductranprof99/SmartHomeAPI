@@ -34,8 +34,8 @@ class Device(models.Model):
     feed_name =  models.CharField(max_length=30,blank=False,null=False)
     description = models.CharField(max_length=50,blank=True,null=True)
     device_type = models.CharField(max_length=30,blank=False,null=False)
-    current_status = models.BooleanField(null=False,blank=False)
-    value = models.CharField(max_length=50,blank=True,null=True)
+    current_status = models.CharField(max_length=30,blank=False,null=False)
+    unit = models.CharField(max_length=50,blank=True,null=True)
     mode = models.IntegerField(null=False,validators=[MaxValueValidator(3),MinValueValidator(1)])
     schedule = models.ArrayField(
         model_container=Schedule,
@@ -67,7 +67,3 @@ class History(models.Model):
     mode =  models.BooleanField(blank=False,null=False)
     objects = models.DjongoManager()
     
-class DevicesAdmin(models.Model):
-    
-    
-    objects = models.DjongoManager()
