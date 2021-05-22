@@ -13,62 +13,66 @@ class AdaConnect():
     def feedServices(self,command,feedKey):
         if (command == "delete"):
             self.aio.delete_feed(feedKey)
-        if (command == "contain"):
-            for f in self.feeds:
-                if f.key == feedKey:
-                    feed = self.aio.feeds(f.key)
-                    return feed
-            return None
-            
 
+    def retrievefeedKey(self,feedName):
+        for feed in self.feeds:
+            if feed.name == feedName:
+                return feed.key
+        return None
 
-    def createFeed(self,feedKey):
-        if(self.feedServices("contain",feedKey) == None):
-                feed = Feed(key = feedKey)
+    def contain(self,feedName):
+        for feed in self.feeds:
+            if feed.name == feedName:
+                return True
+        return False
+
+    def createFeed(self,feedName):
+        if(self.contain(feedName)):
+                feed = Feed(name = feedName)
                 result = self.aio.create_feed(feed)
                 return result
         return None
 
-    def getFeedOneData(self,feedKey):
+    def getFeedOneData(self,feedName):
         """
         Data: created_epoch ; created_at;  updated_at; value; completed_at; feed_id; expiration; position; id; lat; lon; ele
         """
-        if (self.feedServices("contain",feedKey) != None):
-            data = self.aio.receive(feedKey)
+        if(self.contain(feedName)):
+            data = self.aio.receive(feedName)
             return data
         return None
-    def getFeedAllData(self,feedKey):
+    def getFeedAllData(self,feedName):
         """
         Return a list of dictionary
         Data: created_epoch ; created_at;  updated_at; value; completed_at; feed_id; expiration; position; id; lat; lon; ele
         """
-        if (self.feedServices("contain",feedKey) != None):
-            return self.aio.data(feedKey)
+        if(self.contain(feedName)):
+            return self.aio.data(feedName)
         return None
 
-    def deleteFeedData(self,feedKey,id=None):
+    def deleteFeedData(self,feedName,id=None):
         """
         Delete a feed data, if not parse id, mean delete all data
         Data: created_epoch ; created_at;  updated_at; value; completed_at; feed_id; expiration; position; id; lat; lon; ele
         """
-        if (self.feedServices("contain",feedKey) != None):
+        if(self.contain(feedName)):
             if (id == None):
-                data = self.aio.data(feedKey)
+                data = self.aio.data(feedName)
                 iter = len(data)
                 for i in range(iter):
-                    self.aio.delete(feedKey, i)
+                    self.aio.delete(feedName, i)
                 return "erase all data"
             else:
-                self.aio.delete(feedKey, id)
+                self.aio.delete(feedName, id)
                 return "erase data" + id
         return None
 
-    def sendDataToFeed(self,feedKey,value = None):
+    def sendDataToFeed(self,feedName,value = None):
         """
         send value directly to feed, append btw
         """
-        if (self.feedServices("contain",feedKey) != None and value != None):
-            self.aio.send_data(feedKey, value)
+        if (self.contain(feedName) and value != None):
+            self.aio.send_data(self.retrievefeedKey(feedName), value)
             return "Done"
         return None
 

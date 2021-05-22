@@ -48,10 +48,10 @@ def home_user(request,phonenumber:str,devicename = ''):
             for d in home_data[0]['devices']:
                 current_device = {}
                 current_device['device-id'] = count  # fix here 2, i want to store this in database, lesswork and more safe, but naming stage kinda sus
-                complete_feedid = phonenumber+ '-' + str(count)
+                complete_feedname = phonenumber+ '_' + str(count)
                 current_device['device_name'] = d['device_name']
                 current_device['description'] = d['description']
-                current_device['status'] = mqtt.access.getFeedOneData(complete_feedid).value  #fix here with that naming below
+                current_device['status'] = mqtt.access.getFeedOneData(complete_feedname).value  #fix here with that naming below
                 current_device['device_type'] = d['device_type']
                 if d['device_type'] == "temperature" or d['device_type'] == "humid":
                     current_device['unit'] = d['unit']
@@ -83,9 +83,9 @@ def home_user(request,phonenumber:str,devicename = ''):
         device_id = request.data["device_id"]
         data = request.data["data"]
         res = {"device_id":device_id,"data":data}
-        complete_feedid = phonenumber+'-' + str(device_id)
-        print(complete_feedid)
-        print(mqtt.access.sendDataToFeed(complete_feedid,str(data)))
+        complete_feedname = phonenumber+'_' + str(device_id)
+        print(complete_feedname)
+        print(mqtt.access.sendDataToFeed(complete_feedname,str(data)))
         return JsonResponse(res, safe=False,  status=status.HTTP_202_ACCEPTED)
         #mqtt.access.sendDataToFeed()
         # home = Home()
