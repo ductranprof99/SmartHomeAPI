@@ -1,3 +1,4 @@
+from django.db.models.fields import CharField
 from djongo import models
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.contrib.auth.models import AbstractUser
@@ -20,6 +21,7 @@ class User(AbstractUser):
 
 
 class Schedule(models.Model):
+    schedule_id = models.ObjectIdField(primary_key=True)
     time_on = models.CharField(max_length=5,blank=True,null=True)
     time_off = models.CharField(max_length=5,blank=True,null=True)
     is_repeat = models.BooleanField(null=True)
@@ -35,7 +37,7 @@ class Device(models.Model):
     description = models.CharField(max_length=50,blank=True,null=True)
     device_type = models.CharField(max_length=30,blank=False,null=False)
     current_status = models.CharField(max_length=30,blank=False,null=False)
-    unit = models.CharField(max_length=50,blank=True,null=True)
+    unit = models.CharField(max_length=30,blank=False,null=False)
     mode = models.IntegerField(null=False,validators=[MaxValueValidator(3),MinValueValidator(1)])
     schedule = models.ArrayField(
         model_container=Schedule,

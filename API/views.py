@@ -13,7 +13,8 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.response import Response
 from SmartHomeAPI import settings
 from . import mqtt
-
+import ast
+import API.stringProcess
 
 @api_view(['GET','POST'])
 def allusers(request):
@@ -31,15 +32,15 @@ def allusers(request):
 
 @api_view(['GET','POST'])
 def home_user(request,phonenumber:str,devicename = ''):
+    homes = Home.objects.all()
+    homes = homes.filter(phone_number=phonenumber)
+    home_data = HomeSerializer(homes, many=True).data
+    home_data[0]['devices'] = json.loads(home_data[0]['devices'])
     if request.method == 'GET':
         """
         need to fix the for loop later, this prototype get data directly from adafruit, but
         we want to get data from the database (the message function in mqtt is not done yet)
         """
-        homes = Home.objects.all()
-        homes = homes.filter(phone_number=phonenumber)
-        home_data = HomeSerializer(homes, many=True).data
-        home_data[0]['devices'] = json.loads(home_data[0]['devices'])
         if devicename == '':
             res = {}
             res["home_id"] = home_data[0]['phone_number']
@@ -50,16 +51,16 @@ def home_user(request,phonenumber:str,devicename = ''):
                 current_device['device-id'] = count  # fix here 2, i want to store this in database, lesswork and more safe, but naming stage kinda sus
                 current_device['device_name'] = d['device_name']
                 current_device['description'] = d['description']
-                current_device['status'] = mqtt.access.getFeedOneData(d['feed_name']).value  #fix 2, using feed_name in dtb data
+                # fix cai dong duoi nay, vi no lay tu ada, expectation lay tu database
+                ada_data = ast.literal_eval(mqtt.access.getFeedOneData(d['feed_name']).value) #fix 2, using feed_name in dtb data
+                current_device['status'] = API.stringProcess.dehumanize(ada_data['unit'],ada_data['data'])
                 current_device['device_type'] = d['device_type']
-                if d['device_type'] == "temperature" or d['device_type'] == "humid":
-                    current_device['unit'] = d['unit']
+                current_device['unit'] = d['unit']
                 count+=1
                 res['devices'] += [current_device]
             return JsonResponse(res, safe=False,  status=status.HTTP_202_ACCEPTED)
             ## still not done with the device delete, im done with my life
         elif devicename != '':
-            paralelcheck = {'1': 'Sun','2': 'Mon','3': 'Tue','4': 'Wed','5': 'Thu','6': 'Fri','1': 'Sat'}
             device_order = int(devicename)
             result = {"device-id": devicename}
             result.update(home_data[0]['devices'][device_order-1])
@@ -67,13 +68,11 @@ def home_user(request,phonenumber:str,devicename = ''):
             result['current_status'] = mqtt.access.getFeedOneData(result['feed_name']).value
             for d in result['schedule']:
                 d["is_repeat"] = bool(d["is_repeat"])
-                if d['is_repeat'] == 'True':
-                    res_repeat = {}
-                    for key in paralelcheck:
-                        if key in d['repeat_day']:
-                            res_repeat[paralelcheck[key]] = True
-                        else:
-                            res_repeat[paralelcheck[key]] = False
+                if d['is_repeat'] == True:
+                    res_repeat = []
+                    for i in range(7):
+                        if str(i) in d['repeat_day']:
+                            res_repeat += [i]
                     d['repeat_day'] = res_repeat
                     print(d['repeat_day'])
             return JsonResponse(result, safe=False,  status=status.HTTP_202_ACCEPTED)
@@ -81,11 +80,18 @@ def home_user(request,phonenumber:str,devicename = ''):
     if request.method == 'POST':
         print(request.data)
         device_id = request.data["device_id"]
+        metafor = {'ON':1,'OFF':0}
+        result = {}
+        result.update(home_data[0]['devices'][device_id-1])
         data = request.data["data"]
+        ada_send = {}
+        ada_send["id"] = result['feed_name']
+        ada_send["name"] = "RELAY"
+        ada_send["data"] = metafor[data]
+        ada_send["unit"] = None
+        print(result)
         res = {"device_id":device_id,"data":data}
-        complete_feedname = phonenumber+'_' + str(device_id)
-        print(complete_feedname)
-        print(mqtt.access.sendDataToFeed(complete_feedname,str(data)))
+        print(mqtt.access.sendDataToFeed(ada_send["id"],str(ada_send)))
         return JsonResponse(res, safe=False,  status=status.HTTP_202_ACCEPTED)
         #mqtt.access.sendDataToFeed()
         # home = Home()
