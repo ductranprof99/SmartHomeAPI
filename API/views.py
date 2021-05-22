@@ -48,10 +48,9 @@ def home_user(request,phonenumber:str,devicename = ''):
             for d in home_data[0]['devices']:
                 current_device = {}
                 current_device['device-id'] = count  # fix here 2, i want to store this in database, lesswork and more safe, but naming stage kinda sus
-                complete_feedname = phonenumber+ '_' + str(count)
                 current_device['device_name'] = d['device_name']
                 current_device['description'] = d['description']
-                current_device['status'] = mqtt.access.getFeedOneData(complete_feedname).value  #fix here with that naming below
+                current_device['status'] = mqtt.access.getFeedOneData(d['feed_name']).value  #fix 2, using feed_name in dtb data
                 current_device['device_type'] = d['device_type']
                 if d['device_type'] == "temperature" or d['device_type'] == "humid":
                     current_device['unit'] = d['unit']
@@ -65,6 +64,7 @@ def home_user(request,phonenumber:str,devicename = ''):
             result = {"device-id": devicename}
             result.update(home_data[0]['devices'][device_order-1])
             result['schedule'] = json.loads(result['schedule'])
+            result['current_status'] = mqtt.access.getFeedOneData(result['feed_name']).value
             for d in result['schedule']:
                 d["is_repeat"] = bool(d["is_repeat"])
                 if d['is_repeat'] == 'True':

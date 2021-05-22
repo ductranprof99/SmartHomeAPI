@@ -38,7 +38,8 @@ class AdaConnect():
         Data: created_epoch ; created_at;  updated_at; value; completed_at; feed_id; expiration; position; id; lat; lon; ele
         """
         if(self.contain(feedName)):
-            data = self.aio.receive(feedName)
+            feedKey = self.retrievefeedKey(feedName)
+            data = self.aio.receive(feedKey)
             return data
         return None
     def getFeedAllData(self,feedName):
@@ -47,7 +48,8 @@ class AdaConnect():
         Data: created_epoch ; created_at;  updated_at; value; completed_at; feed_id; expiration; position; id; lat; lon; ele
         """
         if(self.contain(feedName)):
-            return self.aio.data(feedName)
+            feedKey = self.retrievefeedKey(feedName)
+            return self.aio.data(feedKey)
         return None
 
     def deleteFeedData(self,feedName,id=None):
