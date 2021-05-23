@@ -1,24 +1,5 @@
-from django.db.models.fields import CharField
 from djongo import models
 from django.core.validators import MaxValueValidator, MinValueValidator
-from django.contrib.auth.models import AbstractUser
-
-
-class User(AbstractUser):
-    # Delete not use field
-    username = None
-    last_login = None
-    is_normaluser = None
-    is_superuser = None
-
-    password = models.CharField(max_length=100)
-    phone_number = models.CharField(max_length=100, unique=True)
-    USERNAME_FIELD = 'phone_number'
-    REQUIRED_FIELDS = []
-
-    def __str__(self):
-        return self.phone_number
-
 from django.contrib.auth.models import AbstractUser
 
 
@@ -93,9 +74,8 @@ class Home(models.Model):
 class History(models.Model):
     device_id = models.CharField(max_length=30,blank=False,null=False,default="Need a string there")
     time = models.CharField(max_length=30,blank=False,null=False)
-    value = models.CharField(max_length=30,blank=False,null=False)
-    mode =  models.BooleanField(blank=False,null=False)
-    unit = models.CharField(max_length=30,blank=False,null=False,default="")
+    value = models.CharField(max_length=100,blank=False,null=False)
+    
     objects = models.DjongoManager()
     
 class DevicesAdmin(models.Model):

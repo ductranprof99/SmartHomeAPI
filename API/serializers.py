@@ -26,7 +26,7 @@ class DeviceOnHomeSerializer(serializers.ModelSerializer):
  
     class Meta:
         model = Device
-        fields = ('device_id', 'device_name', 'description', 'device_type', 'current_status')
+        fields = ('device_name', 'description', 'device_type', 'current_status')
 
 class DeviceDetailSerializer(serializers.ModelSerializer):
  

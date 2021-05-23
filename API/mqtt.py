@@ -1,5 +1,8 @@
-import sys, os, time
+import sys, os
 from Adafruit_IO import Client,Data,Feed,MQTTClient
+from datetime import datetime
+#from API.models import History
+
 #from . import mongo
 ADAFRUIT_ADMIN_USERNAME = os.getenv('ADAFRUIT_ADMIN_USERNAME')
 ADAFRUIT_ADMIN_KEY = os.getenv('ADAFRUIT_IO_KEY')
@@ -96,7 +99,15 @@ def message(client, topic_id, payload):
     for feed_id in feed_name_array:
         if topic_id == feed_id:
             # save that payloadshit into database
-            print('Topic {0} received new value: {1}'.format(topic_id, payload))
+            timee = datetime.now().strftime("%d-%b-%Y (%H:%M:%S.%f)")
+            from . import models
+            new_history = models.History()
+            new_history.device_id = topic_id
+            new_history.time = timee
+            new_history.value = payload
+            new_history.save()
+            print(payload)
+
 
     
 client = MQTTClient(ADAFRUIT_ADMIN_USERNAME, ADAFRUIT_ADMIN_KEY)
