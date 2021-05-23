@@ -3,6 +3,8 @@ from django.http.response import JsonResponse
 from django.views.decorators.csrf import requires_csrf_token
 from rest_framework import status
 import json
+from bson.json_util import ObjectId
+
 from API.models import *
 from API.serializers import *
 from rest_framework.decorators import api_view
@@ -20,20 +22,19 @@ import API.stringProcess
 def allusers(request):
     homes = Home.objects.all()
     result = {'users': []}
-    home_data = HomeSerializer(homes, many=True).data
+    home_data = AllHomeSerializer(homes, many=True).data
     for home in home_data:
         home = dict(home)
-        bla = {}
-        bla['phone_number'] = home['phone_number']
-        bla['address'] = home['address']
-        result['users'] += [bla]
+        result['users'] += [home]
     # print(result)
     return JsonResponse(result, safe=False,  status=status.HTTP_202_ACCEPTED)
 
 @api_view(['GET','POST'])
 def home_user(request,phonenumber:str,devicename = ''):
     homes = Home.objects.all()
+    devices_all = Device.objects.all()
     homes = homes.filter(phone_number=phonenumber)
+    devices = devices_all.filter(home_phonenumber=phonenumber)
     home_data = HomeSerializer(homes, many=True).data
     home_data[0]['devices'] = json.loads(home_data[0]['devices'])
     if request.method == 'GET':
@@ -44,55 +45,46 @@ def home_user(request,phonenumber:str,devicename = ''):
         if devicename == '':
             res = {}
             res["home_id"] = home_data[0]['phone_number']
+            device_ordereddict = DeviceOnHomeSerializer(devices, many=True).data
             res['devices'] = []
-            count = 1
-            for d in home_data[0]['devices']:
-                current_device = {}
-                current_device['device-id'] = count  # fix here 2, i want to store this in database, lesswork and more safe, but naming stage kinda sus
-                current_device['device_name'] = d['device_name']
-                current_device['description'] = d['description']
-                # fix cai dong duoi nay, vi no lay tu ada, expectation lay tu database
-                ada_data = ast.literal_eval(mqtt.access.getFeedOneData(d['feed_name']).value) #fix 2, using feed_name in dtb data
-                current_device['status'] = API.stringProcess.dehumanize(ada_data['unit'],ada_data['data'])
-                current_device['device_type'] = d['device_type']
-                current_device['unit'] = d['unit']
-                count+=1
+            for d in device_ordereddict:
+                current_device = dict(d)
                 res['devices'] += [current_device]
             return JsonResponse(res, safe=False,  status=status.HTTP_202_ACCEPTED)
             ## still not done with the device delete, im done with my life
-        elif devicename != '':
-            device_order = int(devicename)
-            result = {"device-id": devicename}
-            result.update(home_data[0]['devices'][device_order-1])
-            result['schedule'] = json.loads(result['schedule'])
-            result['current_status'] = mqtt.access.getFeedOneData(result['feed_name']).value
-            for d in result['schedule']:
-                d["is_repeat"] = bool(d["is_repeat"])
-                if d['is_repeat'] == True:
-                    res_repeat = []
-                    for i in range(7):
-                        if str(i) in d['repeat_day']:
-                            res_repeat += [i]
-                    d['repeat_day'] = res_repeat
-                    print(d['repeat_day'])
-            return JsonResponse(result, safe=False,  status=status.HTTP_202_ACCEPTED)
-        return JsonResponse(None, status=status.HTTP_400_BAD_REQUEST)
-    if request.method == 'POST':
-        print(request.data)
-        device_id = request.data["device_id"]
-        metafor = {'ON':1,'OFF':0}
-        result = {}
-        result.update(home_data[0]['devices'][device_id-1])
-        data = request.data["data"]
-        ada_send = {}
-        ada_send["id"] = result['feed_name']
-        ada_send["name"] = "RELAY"
-        ada_send["data"] = metafor[data]
-        ada_send["unit"] = None
-        print(result)
-        res = {"device_id":device_id,"data":data}
-        print(mqtt.access.sendDataToFeed(ada_send["id"],str(ada_send)))
-        return JsonResponse(res, safe=False,  status=status.HTTP_202_ACCEPTED)
+    #     elif devicename != '':
+    #         device_order = int(devicename)
+    #         result = {"device-id": devicename}
+    #         result.update(home_data[0]['devices'][device_order-1])
+    #         result['schedule'] = json.loads(result['schedule'])
+    #         result['current_status'] = mqtt.access.getFeedOneData(result['feed_name']).value
+    #         for d in result['schedule']:
+    #             d["is_repeat"] = bool(d["is_repeat"])
+    #             if d['is_repeat'] == True:
+    #                 res_repeat = []
+    #                 for i in range(7):
+    #                     if str(i) in d['repeat_day']:
+    #                         res_repeat += [i]
+    #                 d['repeat_day'] = res_repeat
+    #                 print(d['repeat_day'])
+    #         return JsonResponse(result, safe=False,  status=status.HTTP_202_ACCEPTED)
+    #     return JsonResponse(None, status=status.HTTP_400_BAD_REQUEST)
+    # if request.method == 'POST':
+    #     print(request.data)
+    #     device_id = request.data["device_id"]
+    #     metafor = {'ON':1,'OFF':0}
+    #     result = {}
+    #     result.update(home_data[0]['devices'][device_id-1])
+    #     data = request.data["data"]
+    #     ada_send = {}
+    #     ada_send["id"] = result['feed_name']
+    #     ada_send["name"] = "RELAY"
+    #     ada_send["data"] = metafor[data]
+    #     ada_send["unit"] = None
+    #     print(result)
+    #     res = {"device_id":device_id,"data":data}
+    #     print(mqtt.access.sendDataToFeed(ada_send["id"],str(ada_send)))
+    return JsonResponse({}, safe=False,  status=status.HTTP_202_ACCEPTED)
         #mqtt.access.sendDataToFeed()
         # home = Home()
         # schedule = Schedule()
@@ -166,4 +158,27 @@ class UserLoginView(APIView):
 
 
 
+@api_view(['GET','POST'])
+def addData(request):
 
+    """
+    require admin user, i will make  IsAuthencation(request.data[token] in here)
+    """
+    device = Device()
+    device._id = ObjectId()
+    device.device_id = str(device._id)
+    device.description= "Nhiet do va do am trong - F207"
+    device.device_name = "temperature and humid"
+    device.schedule = []
+    device.device_type = "TEMP-HUMID"
+    device.current_status = "1"
+    device.unit = "*C-%"
+    device.mode = 1
+    device.home_phonenumber = "0789123456"
+    device.feed_name = str(device._id) + "0789123456"
+    device.save()
+    print(device)
+    devices = Device.objects.all()
+    devices = DeviceDetailSerializer(devices,many=True).data
+    
+    return  JsonResponse([dict(d) for d in devices], safe=False,  status=status.HTTP_202_ACCEPTED)

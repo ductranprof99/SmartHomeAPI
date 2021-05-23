@@ -92,8 +92,9 @@ DATABASES = {
     'default': {
         'ENGINE': 'djongo',
         'NAME': 'smarthome1dot0',
+        'ENFORCE_SCHEMA': True,
         'CLIENT': {
-           'host': "mongodb+srv://Hao:khongco@cluster0.zx05d.mongodb.net/smarthome1dot0?retryWrites=true&w=majority",
+           'host': os.getenv('DATABASE_URL'),
         }
     }
 }
