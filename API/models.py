@@ -1,7 +1,23 @@
+from django.db.models.fields import CharField
 from djongo import models
 from django.core.validators import MaxValueValidator, MinValueValidator
-from django.core.validators import int_list_validator
+from django.contrib.auth.models import AbstractUser
 
+
+class User(AbstractUser):
+    # Delete not use field
+    username = None
+    last_login = None
+    is_normaluser = None
+    is_superuser = None
+
+    password = models.CharField(max_length=100)
+    phone_number = models.CharField(max_length=100, unique=True)
+    USERNAME_FIELD = 'phone_number'
+    REQUIRED_FIELDS = []
+
+    def __str__(self):
+        return self.phone_number
 
 from django.contrib.auth.models import AbstractUser
 
@@ -22,40 +38,52 @@ class User(AbstractUser):
         return self.phone_number
 
 class Schedule(models.Model):
+    _id = models.ObjectIdField(primary_key=True)
+    schedule_id = models.CharField(max_length=24,null=False)
+    device_id = models.CharField(max_length=30,blank=False,null=False)
     time_on = models.CharField(max_length=5,blank=True,null=True)
     time_off = models.CharField(max_length=5,blank=True,null=True)
     is_repeat = models.BooleanField(null=True)
     repeat_day = models.CharField(max_length=50,blank=True,null=True)
+    objects = models.DjongoManager()
+
+
+class ScheduleNested(models.Model):
+    schedule_id =  models.CharField(max_length=30,blank=False,null=False)
     class Meta:
         abstract = True  
 
 
-
 class Device(models.Model):
+    _id = models.ObjectIdField(primary_key=True)
+    device_id = models.CharField(max_length=24,null=False)
+    phone_number =  models.CharField(max_length=30,blank=False,null=False)
     device_name = models.CharField(max_length=30,blank=False,null=False)
     feed_name =  models.CharField(max_length=30,blank=False,null=False)
     description = models.CharField(max_length=50,blank=True,null=True)
     device_type = models.CharField(max_length=30,blank=False,null=False)
-    current_status = models.BooleanField(null=False,blank=False)
-    value = models.CharField(max_length=50,blank=True,null=True)
+    current_status = models.CharField(max_length=30,blank=False,null=False)
+    unit = models.CharField(max_length=30,blank=False,null=False,default="")
     mode = models.IntegerField(null=False,validators=[MaxValueValidator(3),MinValueValidator(1)])
     schedule = models.ArrayField(
-        model_container=Schedule,
+        model_container=ScheduleNested,
         null=True,
         blank=True
     )
+    objects = models.DjongoManager()
+    
+class DeviceNested(models.Model):
+    device_id =  models.CharField(max_length=30,blank=False,null=False)
     class Meta:
         abstract = True
     
 
-
 class Home(models.Model):
-    _id = models.ObjectIdField(db_column="_id", primary_key=True)
     home_name = models.CharField(max_length=30,blank=False,null=False)
     phone_number = models.CharField(max_length=30,blank=False,null=False,unique=True,default="required phone number")
     address =  models.CharField(max_length=100,blank=False,null=False)
     devices = models.ArrayField(
-        model_container=Device,
+        model_container=DeviceNested,
         null=True,
         blank=True
     )
@@ -67,6 +95,7 @@ class History(models.Model):
     time = models.CharField(max_length=30,blank=False,null=False)
     value = models.CharField(max_length=30,blank=False,null=False)
     mode =  models.BooleanField(blank=False,null=False)
+    unit = models.CharField(max_length=30,blank=False,null=False,default="")
     objects = models.DjongoManager()
     
 class DevicesAdmin(models.Model):

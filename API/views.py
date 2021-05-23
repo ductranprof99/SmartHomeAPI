@@ -1,81 +1,91 @@
 from django.shortcuts import render
 from django.http.response import JsonResponse
 from django.views.decorators.csrf import requires_csrf_token
-from rest_framework.parsers import JSONParser 
 from rest_framework import status
 import json
+from bson.json_util import ObjectId
 
-from rest_framework.serializers import Serializer
 from API.models import *
 from API.serializers import *
 from rest_framework.decorators import api_view
-from django.forms.models import model_to_dict
 from rest_framework.views import APIView
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.response import Response
 from SmartHomeAPI import settings
+from . import mqtt
+import ast
+import API.stringProcess
 
+@api_view(['GET','POST'])
+def allusers(request):
+    homes = Home.objects.all()
+    result = {'users': []}
+    home_data = AllHomeSerializer(homes, many=True).data
+    for home in home_data:
+        home = dict(home)
+        result['users'] += [home]
+    # print(result)
+    return JsonResponse(result, safe=False,  status=status.HTTP_202_ACCEPTED)
 
 @api_view(['GET','POST'])
 def home_user(request,phonenumber:str,devicename = ''):
+    homes = Home.objects.all()
+    devices_all = Device.objects.all()
+    homes = homes.filter(phone_number=phonenumber)
+    devices = devices_all.filter(home_phonenumber=phonenumber)
+    home_data = HomeSerializer(homes, many=True).data
+    home_data[0]['devices'] = json.loads(home_data[0]['devices'])
     if request.method == 'GET':
-    
-        homes = Home.objects.all()
-        homes = homes.filter(phone_number=phonenumber)
-        home_data = HomeSerializer(homes, many=True).data
-        home_data[0]['devices'] = json.loads(home_data[0]['devices'])
+        """
+        need to fix the for loop later, this prototype get data directly from adafruit, but
+        we want to get data from the database (the message function in mqtt is not done yet)
+        """
         if devicename == '':
             res = {}
-            res["home_id"] = home_data[0]['_id']
+            res["home_id"] = home_data[0]['phone_number']
+            device_ordereddict = DeviceOnHomeSerializer(devices, many=True).data
             res['devices'] = []
-            count = 1
-            for d in home_data[0]['devices']:
-                current_device = {}
-                current_device['device-id'] = count
-                current_device['device_name'] = d['device_name']
-                current_device['description'] = d['description']
-                current_device['status'] = d['current_status']
-                current_device['device_type'] = d['device_type']
-                count+=1
+            for d in device_ordereddict:
+                current_device = dict(d)
                 res['devices'] += [current_device]
             return JsonResponse(res, safe=False,  status=status.HTTP_202_ACCEPTED)
-        elif devicename != '':
-            device_order = int(devicename)
-            result = {"device-id": devicename}
-            result.update(home_data[0]['devices'][device_order-1])
-            result['schedule'] = json.loads(result['schedule'])
-            for d in result['schedule']:
-                if d['is_repeat'] == 'True':
-                    res_repeat = {}
-                    if '1' in d['repeat_day']:
-                        res_repeat['Sun'] = 1
-                    else: res_repeat['Sun'] = 0
-                    if '2' in d['repeat_day']: 
-                        res_repeat['Mon'] = 1
-                    else: res_repeat['Mon'] = 0   
-                    if '3' in d['repeat_day']:
-                        res_repeat['Tue'] = 1 
-                    else: res_repeat['Tue'] = 0
-                    if '4' in d['repeat_day']:
-                        res_repeat['Wed'] = 1 
-                    else: res_repeat['Wed'] = 0
-                    if '5' in d['repeat_day']:
-                        res_repeat['Thu'] = 1 
-                    else: res_repeat['Thu'] = 0
-                    if '6' in d['repeat_day']:
-                        res_repeat['Fri'] = 1 
-                    else: res_repeat['Fri'] = 0
-                    if '5' in d['repeat_day']:
-                        res_repeat['Sat'] = 1 
-                    else: res_repeat['Sat'] = 0
-                    d['repeat_day'] = res_repeat
-                    print(d['repeat_day'])
-            return JsonResponse(result, safe=False,  status=status.HTTP_202_ACCEPTED)
-        return JsonResponse(None, status=status.HTTP_400_BAD_REQUEST)
-    if request.method == 'POST':
-        pass
+            ## still not done with the device delete, im done with my life
+    #     elif devicename != '':
+    #         device_order = int(devicename)
+    #         result = {"device-id": devicename}
+    #         result.update(home_data[0]['devices'][device_order-1])
+    #         result['schedule'] = json.loads(result['schedule'])
+    #         result['current_status'] = mqtt.access.getFeedOneData(result['feed_name']).value
+    #         for d in result['schedule']:
+    #             d["is_repeat"] = bool(d["is_repeat"])
+    #             if d['is_repeat'] == True:
+    #                 res_repeat = []
+    #                 for i in range(7):
+    #                     if str(i) in d['repeat_day']:
+    #                         res_repeat += [i]
+    #                 d['repeat_day'] = res_repeat
+    #                 print(d['repeat_day'])
+    #         return JsonResponse(result, safe=False,  status=status.HTTP_202_ACCEPTED)
+    #     return JsonResponse(None, status=status.HTTP_400_BAD_REQUEST)
+    # if request.method == 'POST':
+    #     print(request.data)
+    #     device_id = request.data["device_id"]
+    #     metafor = {'ON':1,'OFF':0}
+    #     result = {}
+    #     result.update(home_data[0]['devices'][device_id-1])
+    #     data = request.data["data"]
+    #     ada_send = {}
+    #     ada_send["id"] = result['feed_name']
+    #     ada_send["name"] = "RELAY"
+    #     ada_send["data"] = metafor[data]
+    #     ada_send["unit"] = None
+    #     print(result)
+    #     res = {"device_id":device_id,"data":data}
+    #     print(mqtt.access.sendDataToFeed(ada_send["id"],str(ada_send)))
+    return JsonResponse({}, safe=False,  status=status.HTTP_202_ACCEPTED)
+        #mqtt.access.sendDataToFeed()
         # home = Home()
         # schedule = Schedule()
         # schedule.time_on = '10:00'
@@ -148,3 +158,27 @@ class UserLoginView(APIView):
 
 
 
+@api_view(['GET','POST'])
+def addData(request):
+
+    """
+    require admin user, i will make  IsAuthencation(request.data[token] in here)
+    """
+    device = Device()
+    device._id = ObjectId()
+    device.device_id = str(device._id)
+    device.description= "Nhiet do va do am trong - F207"
+    device.device_name = "temperature and humid"
+    device.schedule = []
+    device.device_type = "TEMP-HUMID"
+    device.current_status = "1"
+    device.unit = "*C-%"
+    device.mode = 1
+    device.home_phonenumber = "0789123456"
+    device.feed_name = str(device._id) + "0789123456"
+    device.save()
+    print(device)
+    devices = Device.objects.all()
+    devices = DeviceDetailSerializer(devices,many=True).data
+    
+    return  JsonResponse([dict(d) for d in devices], safe=False,  status=status.HTTP_202_ACCEPTED)
