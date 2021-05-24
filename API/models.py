@@ -46,7 +46,7 @@ class Device(models.Model):
     status = models.CharField(max_length=30,blank=False,null=False)
     unit = models.CharField(max_length=30,blank=False,null=False,default="")
     automation_mode = models.IntegerField(null=False,validators=[MaxValueValidator(2),MinValueValidator(0)])
-    schedule = models.ArrayField(
+    schedules = models.ArrayField(
         model_container=ScheduleNested,
         null=True,
         blank=True

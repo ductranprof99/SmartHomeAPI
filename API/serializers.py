@@ -26,19 +26,19 @@ class DeviceOnHomeSerializer(serializers.ModelSerializer):
  
     class Meta:
         model = Device
-        fields = ('device_name', 'description', 'device_type', 'current_status')
+        fields = ('device_name', 'device_type', 'description' , 'status','automation_mode')
 
 class DeviceDetailSerializer(serializers.ModelSerializer):
  
     class Meta:
         model = Device
-        fields = '__all__'
+        fields = ('device_name', 'device_type', 'description' , 'status','automation_mode','schedules')
 
 class ScheduleSerializer(serializers.ModelSerializer):
  
     class Meta:
         model = Schedule
-        fields = '__all__'
+        fields = ('schedule_id', 'time_on', 'time_off' , 'is_repeat','repeat')
 
 class HistorySerializer(serializers.ModelSerializer):
  
