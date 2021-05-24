@@ -40,11 +40,17 @@ class DeviceCommandSerializer(serializers.ModelSerializer):
         model = Device
         fields = ('device_id', 'feed_name','unit','device_type')
 
-class ScheduleSerializer(serializers.ModelSerializer):
+class ScheduleDisplaySerializer(serializers.ModelSerializer):
  
     class Meta:
         model = Schedule
-        fields = ('schedule_id', 'time_on', 'time_off' , 'is_repeat','repeat')
+        fields = ('time_on', 'time_off' , 'is_repeat','repeat_day')
+
+class ScheduleInputSerializer(serializers.ModelSerializer):
+ 
+    class Meta:
+        model = Schedule
+        fields = ('schedule_id', 'time_on', 'time_off' , 'is_repeat','repeat_day')
 
 class HistorySerializer(serializers.ModelSerializer):
  

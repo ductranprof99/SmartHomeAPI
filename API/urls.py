@@ -11,4 +11,5 @@ urlpatterns = [
     path('login', views.UserLoginView.as_view(), name='login'),
     path('adddevice',views.addDevice),
     path('addhome',views.addHome),
+    path('addsched',views.addSchedule),
 ]

@@ -30,13 +30,12 @@ def allusers(request):
 
 @api_view(['GET','POST'])
 def home_user(request,phonenumber:str,deviceOrder = None):
+    command = {'ON':'1','OFF':'2'}
     homes = Home.objects.all()
     devices = Device.objects.all()
     schedules = Schedule.objects.all()
     homes = homes.filter(phone_number=phonenumber)
     home_data = HomeSerializer(homes, many=True).data
-    home_devices = json.loads(home_data[0]['devices'])
-    command = {'ON':'1','OFF':'2'}
     devices_led = devices.filter(phone_number=phonenumber)
     data_form = {'id':'','name':'','data':'','unit':''}
     if request.method == 'GET':
@@ -51,27 +50,28 @@ def home_user(request,phonenumber:str,deviceOrder = None):
         else:
             device_ord = dict(DeviceDetailSerializer(devices_led,many=True).data[deviceOrder-1])
             order = device_ord.pop('device_id')
-            schedules = schedules.filter(device_id=order)
-            schedule_ord = ScheduleSerializer(schedules,many=True).data
+            print(order)
+            schedules_led = schedules.filter(device_id=order)
+            schedule_ord = ScheduleDisplaySerializer(schedules_led,many=True).data
             result = {'device_id':deviceOrder}
-            result['schedules'] = [dict(sched) for sched in schedule_ord]
-            result.update(device_ord)
+            result['schedules'] = []
+            for sched in schedule_ord:
+                a = {'schedule_id':schedule_ord.index(sched)+1}
+                a.update(dict(sched))
+                result['schedules'] += [a]
             return JsonResponse(result, safe=False,  status=status.HTTP_202_ACCEPTED)
     if request.method == 'POST':
         if deviceOrder == None:
-            income = request.data
-            device_id_int  = int(income['device_id'])-1
-            real_devi_id = home_devices[deviceOrder-1]['device_id']
-            device = devices.filter(device_id=real_devi_id)
-            device_ord = dict(DeviceDetailSerializer(device).data)
+            device_ord = dict(DeviceCommandSerializer(devices_led,many=True).data[request.data['device_id']-1])
             data_form['unit'] = device_ord['unit']
             data_form['id'] = device_ord['feed_name']
-            data_form['data'] = command[income['data']]
+            data_form['data'] = command[request.data['data']]
             data_form['name'] = device_ord['device_type']
             mqtt.access.sendDataToFeed(device_ord['feed_name'],data_form)
+            return JsonResponse(request.data, safe=False,  status=status.HTTP_201_CREATED)
         else :
             pass
-    return JsonResponse({}, safe=False,  status=status.HTTP_202_ACCEPTED)
+    return JsonResponse({}, safe=False,  status=status.HTTP_400_BAD_REQUEST)
 
 
 
@@ -166,3 +166,20 @@ def addHome(request):
         print(home)
         return  JsonResponse({'a':'a'}, safe=False,  status=status.HTTP_202_ACCEPTED)
 
+@api_view(['GET','POST'])
+def addSchedule(request):
+    """
+    this thing for test add data
+    """
+    if request.method == 'POST':
+        sched = Schedule()
+        sched._id = ObjectId()
+        sched.schedule_id = str(sched._id)
+        sched.device_id= request.data['device_id']
+        sched.is_repeat = request.data['is_repeat']
+        sched.repeat_day = str(request.data['repeat_day'])
+        sched.time_on = request.data['time_on']
+        sched.time_off = request.data['time_off']
+        sched.save()
+        print(sched)
+        return  JsonResponse({'a':'a'}, safe=False,  status=status.HTTP_202_ACCEPTED)
