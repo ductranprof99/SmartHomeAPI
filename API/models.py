@@ -43,9 +43,9 @@ class Device(models.Model):
     feed_name =  models.CharField(max_length=30,blank=False,null=False)
     description = models.CharField(max_length=50,blank=True,null=True)
     device_type = models.CharField(max_length=30,blank=False,null=False)
-    current_status = models.CharField(max_length=30,blank=False,null=False)
+    status = models.CharField(max_length=30,blank=False,null=False)
     unit = models.CharField(max_length=30,blank=False,null=False,default="")
-    mode = models.IntegerField(null=False,validators=[MaxValueValidator(3),MinValueValidator(1)])
+    automation_mode = models.IntegerField(null=False,validators=[MaxValueValidator(2),MinValueValidator(0)])
     schedule = models.ArrayField(
         model_container=ScheduleNested,
         null=True,
@@ -72,13 +72,9 @@ class Home(models.Model):
 
 
 class History(models.Model):
-    device_id = models.CharField(max_length=30,blank=False,null=False,default="Need a string there")
+    device_id = models.CharField(max_length=30,blank=False,null=False)
+    device_type = models.CharField(max_length=10,blank=False,null=False)
     time = models.CharField(max_length=30,blank=False,null=False)
-    value = models.CharField(max_length=100,blank=False,null=False)
-    
-    objects = models.DjongoManager()
-    
-class DevicesAdmin(models.Model):
-    _id = models.ObjectIdField(db_column="_id", primary_key=True)
-    home_id = models.CharField(max_length=30,blank=False,null=False)
+    value = models.CharField(max_length=10,blank=False,null=False)
+    unit = models.CharField(max_length=10,blank=False,null=False)
     objects = models.DjongoManager()

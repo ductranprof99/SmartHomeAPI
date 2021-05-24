@@ -1,9 +1,10 @@
 import sys, os
 from Adafruit_IO import Client,Data,Feed,MQTTClient
 from datetime import datetime
-#from API.models import History
-
-#from . import mongo
+import pymongo
+from . import analizer
+cluster = pymongo.MongoClient(host=os.getenv('DATABASE_URL'))
+db = cluster.smarthome1dot0
 ADAFRUIT_ADMIN_USERNAME = os.getenv('ADAFRUIT_ADMIN_USERNAME')
 ADAFRUIT_ADMIN_KEY = os.getenv('ADAFRUIT_IO_KEY')
 class AdaConnect():
@@ -98,14 +99,8 @@ def disconnected(client):
 def message(client, topic_id, payload):
     for feed_id in feed_name_array:
         if topic_id == feed_id:
-            # save that payloadshit into database
-            timee = datetime.now().strftime("%d-%b-%Y (%H:%M:%S.%f)")
-            from . import models
-            new_history = models.History()
-            new_history.device_id = topic_id
-            new_history.time = timee
-            new_history.value = payload
-            new_history.save()
+            status = analizer.anal_payload(topic_id,payload)
+            db['API_device'].update_one({ "feed_name": topic_id },{ "$set": { "status": status } })
             print(payload)
 
 
