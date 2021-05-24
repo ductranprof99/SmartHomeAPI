@@ -30,7 +30,7 @@ def allusers(request):
 
 @api_view(['GET','POST'])
 def home_user(request,phonenumber:str,deviceOrder = None):
-    command = {'ON':'1','OFF':'2'}
+    command = {'ON':'0','OFF':'1'}
     homes = Home.objects.all()
     devices = Device.objects.all()
     schedules = Schedule.objects.all()
@@ -67,7 +67,7 @@ def home_user(request,phonenumber:str,deviceOrder = None):
             data_form['id'] = device_ord['feed_name']
             data_form['data'] = command[request.data['data']]
             data_form['name'] = device_ord['device_type']
-            mqtt.access.sendDataToFeed(device_ord['feed_name'],data_form)
+            mqtt.access.sendDataToFeed(device_ord['feed_name'],str(data_form))
             return JsonResponse(request.data, safe=False,  status=status.HTTP_201_CREATED)
         else :
             pass
