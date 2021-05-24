@@ -29,33 +29,48 @@ def allusers(request):
     return JsonResponse(result, safe=False,  status=status.HTTP_202_ACCEPTED)
 
 @api_view(['GET','POST'])
-def home_user(request,phonenumber:str,devicename = ''):
+def home_user(request,phonenumber:str,deviceOrder = None):
     homes = Home.objects.all()
     devices = Device.objects.all()
     schedules = Schedule.objects.all()
     homes = homes.filter(phone_number=phonenumber)
     home_data = HomeSerializer(homes, many=True).data
     home_devices = json.loads(home_data[0]['devices'])
+    command = {'ON':'1','OFF':'2'}
+    devices_led = devices.filter(phone_number=phonenumber)
+    data_form = {'id':'','name':'','data':'','unit':''}
     if request.method == 'GET':
-        if devicename == '':
-            res = {}
-            res["home_id"] = home_data[0]['phone_number']
-            devices = devices.filter(home_phonenumber=phonenumber)
-            device_ord = DeviceOnHomeSerializer(devices, many=True).data
-            res['devices'] = [{'device_id':device_ord.index(d)}.update(dict(d)) for d in device_ord]
+        if deviceOrder == None:
+            res = {"home_id":home_data[0]['phone_number'],'devices':[]}
+            device_ord = DeviceOnHomeSerializer(devices_led, many=True).data
+            for d in device_ord:
+                a = {'device_id':device_ord.index(d)}
+                a.update(dict(d))
+                res['devices'] += [a]
             return JsonResponse(res, safe=False,  status=status.HTTP_202_ACCEPTED)
         else:
-            real_devi_id = home_devices[int(devicename)-1]['device_id']
-            device = devices.filter(device_id=real_devi_id)
-            device_ord = dict(DeviceDetailSerializer(device).data)
-            schedules = schedules.filter(device_id=real_devi_id)
+            device_ord = dict(DeviceDetailSerializer(devices_led,many=True).data[deviceOrder-1])
+            order = device_ord.pop('device_id')
+            schedules = schedules.filter(device_id=order)
             schedule_ord = ScheduleSerializer(schedules,many=True).data
-            result = {'device_id':int(devicename)-1}
+            result = {'device_id':deviceOrder}
             result['schedules'] = [dict(sched) for sched in schedule_ord]
             result.update(device_ord)
             return JsonResponse(result, safe=False,  status=status.HTTP_202_ACCEPTED)
     if request.method == 'POST':
-        pass
+        if deviceOrder == None:
+            income = request.data
+            device_id_int  = int(income['device_id'])-1
+            real_devi_id = home_devices[deviceOrder-1]['device_id']
+            device = devices.filter(device_id=real_devi_id)
+            device_ord = dict(DeviceDetailSerializer(device).data)
+            data_form['unit'] = device_ord['unit']
+            data_form['id'] = device_ord['feed_name']
+            data_form['data'] = command[income['data']]
+            data_form['name'] = device_ord['device_type']
+            mqtt.access.sendDataToFeed(device_ord['feed_name'],data_form)
+        else :
+            pass
     return JsonResponse({}, safe=False,  status=status.HTTP_202_ACCEPTED)
 
 
@@ -114,41 +129,40 @@ class UserLoginView(APIView):
 
 
 @api_view(['GET','POST'])
-def addData(request):
-
+def addDevice(request):
     """
-    require admin user, i will make  IsAuthencation(request.data[token] in here)
+    demo : i will make  IsAuthencation(request.data[token] in here) in every views funciton
+    this thing for test add data
     """
     if request.method == 'POST':
         device = Device()
         device._id = ObjectId()
         device.device_id = str(device._id)
+        device.phone_number = request.data['phone_number']
         device.description= request.data['description']
         device.device_name = request.data['device_name']
-        device.schedule = []
         device.device_type = request.data['device_type']
         device.status = request.data['status']
         device.unit = request.data['unit']
         device.automation_mode = request.data['automation_mode']
-        device.phone_number = request.data['phone_number']
-        device.feed_name = str(device._id) + device.home_phonenumber
+        device.schedules = request.data['schedules']
+        device.feed_name = request.data['feed_name']
         device.save()
         print(device)
         return  JsonResponse({'a':'a'}, safe=False,  status=status.HTTP_202_ACCEPTED)
 
 @api_view(['GET','POST'])
 def addHome(request):
-
     """
-    require admin user, i will make  IsAuthencation(request.data[token] in here)
+    this thing for test add data
     """
     if request.method == 'POST':
         home = Home()
         home.address= request.data['address']
-        home.device_name = request.data['']
-        home.device_type = request.data['']
+        home.home_name = request.data['home_name']
         home.devices = []
         home.phone_number = request.data['phone_number']
         home.save()
         print(home)
         return  JsonResponse({'a':'a'}, safe=False,  status=status.HTTP_202_ACCEPTED)
+

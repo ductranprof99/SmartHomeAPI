@@ -32,7 +32,13 @@ class DeviceDetailSerializer(serializers.ModelSerializer):
  
     class Meta:
         model = Device
-        fields = ('device_name', 'device_type', 'description' , 'status','automation_mode','schedules')
+        fields = ('device_id','device_name', 'device_type', 'description' , 'status','automation_mode','schedules')
+
+
+class DeviceCommandSerializer(serializers.ModelSerializer):
+     class Meta:
+        model = Device
+        fields = ('device_id', 'feed_name','unit','device_type')
 
 class ScheduleSerializer(serializers.ModelSerializer):
  
