@@ -1,101 +1,63 @@
-from django.shortcuts import render
 from django.http.response import JsonResponse
 from django.views.decorators.csrf import requires_csrf_token
-from rest_framework.parsers import JSONParser 
 from rest_framework import status
 import json
+from bson.json_util import ObjectId
 
-from rest_framework.serializers import Serializer
 from API.models import *
 from API.serializers import *
 from rest_framework.decorators import api_view
-from django.forms.models import model_to_dict
 from rest_framework.views import APIView
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.response import Response
 from SmartHomeAPI import settings
+from . import mqtt
+from ast import literal_eval
+import API.stringProcess
 
+@api_view(['GET','POST'])
+def allusers(request):
+    homes = Home.objects.all()
+    result = {'users': []}
+    home_data = AllHomeSerializer(homes, many=True).data
+    for home in home_data:
+        home = dict(home)
+        result['users'] += [home]
+    # print(result)
+    return JsonResponse(result, safe=False,  status=status.HTTP_202_ACCEPTED)
 
 @api_view(['GET','POST'])
 def home_user(request,phonenumber:str,devicename = ''):
+    homes = Home.objects.all()
+    devices = Device.objects.all()
+    schedules = Schedule.objects.all()
+    homes = homes.filter(phone_number=phonenumber)
+    home_data = HomeSerializer(homes, many=True).data
+    home_devices = json.loads(home_data[0]['devices'])
     if request.method == 'GET':
-    
-        homes = Home.objects.all()
-        homes = homes.filter(phone_number=phonenumber)
-        home_data = HomeSerializer(homes, many=True).data
-        home_data[0]['devices'] = json.loads(home_data[0]['devices'])
         if devicename == '':
             res = {}
-            res["home_id"] = home_data[0]['_id']
-            res['devices'] = []
-            count = 1
-            for d in home_data[0]['devices']:
-                current_device = {}
-                current_device['device-id'] = count
-                current_device['device_name'] = d['device_name']
-                current_device['description'] = d['description']
-                current_device['status'] = d['current_status']
-                current_device['device_type'] = d['device_type']
-                count+=1
-                res['devices'] += [current_device]
+            res["home_id"] = home_data[0]['phone_number']
+            devices = devices.filter(home_phonenumber=phonenumber)
+            device_ord = DeviceOnHomeSerializer(devices, many=True).data
+            res['devices'] = [{'device_id':device_ord.index(d)}.update(dict(d)) for d in device_ord]
             return JsonResponse(res, safe=False,  status=status.HTTP_202_ACCEPTED)
-        elif devicename != '':
-            device_order = int(devicename)
-            result = {"device-id": devicename}
-            result.update(home_data[0]['devices'][device_order-1])
-            result['schedule'] = json.loads(result['schedule'])
-            for d in result['schedule']:
-                if d['is_repeat'] == 'True':
-                    res_repeat = {}
-                    if '1' in d['repeat_day']:
-                        res_repeat['Sun'] = 1
-                    else: res_repeat['Sun'] = 0
-                    if '2' in d['repeat_day']: 
-                        res_repeat['Mon'] = 1
-                    else: res_repeat['Mon'] = 0   
-                    if '3' in d['repeat_day']:
-                        res_repeat['Tue'] = 1 
-                    else: res_repeat['Tue'] = 0
-                    if '4' in d['repeat_day']:
-                        res_repeat['Wed'] = 1 
-                    else: res_repeat['Wed'] = 0
-                    if '5' in d['repeat_day']:
-                        res_repeat['Thu'] = 1 
-                    else: res_repeat['Thu'] = 0
-                    if '6' in d['repeat_day']:
-                        res_repeat['Fri'] = 1 
-                    else: res_repeat['Fri'] = 0
-                    if '5' in d['repeat_day']:
-                        res_repeat['Sat'] = 1 
-                    else: res_repeat['Sat'] = 0
-                    d['repeat_day'] = res_repeat
-                    print(d['repeat_day'])
+        else:
+            real_devi_id = home_devices[int(devicename)-1]['device_id']
+            device = devices.filter(device_id=real_devi_id)
+            device_ord = dict(DeviceDetailSerializer(device).data)
+            schedules = schedules.filter(device_id=real_devi_id)
+            schedule_ord = ScheduleSerializer(schedules,many=True).data
+            result = {'device_id':int(devicename)-1}
+            result['schedules'] = [dict(sched) for sched in schedule_ord]
+            result.update(device_ord)
             return JsonResponse(result, safe=False,  status=status.HTTP_202_ACCEPTED)
-        return JsonResponse(None, status=status.HTTP_400_BAD_REQUEST)
     if request.method == 'POST':
         pass
-        # home = Home()
-        # schedule = Schedule()
-        # schedule.time_on = '10:00'
-        # schedule.time_off = '18:00'
-        # schedule.is_repeat = True
-        # schedule.repeat_day = '[1,2,3]'
-        # device1 = Device()
-        # device1.device_name = 'den nha tam'
-        # device1.description = 'o trong can nha hoang'
-        # device1.feed_name = 'abba'
-        # device1.device_type = 'light'
-        # device1.current_status = True
-        # device1.value = '1'
-        # device1.mode = 1
-        # device1.schedule = [model_to_dict(schedule)]
-        # home.devices = [model_to_dict(device1)]
-        # home.home_name = 'My house'
-        # home.address = 'Dong Hoa, Di An'
-        # home.save()
-        # return JsonResponse({'a':'a'}, safe=False,  status=status.HTTP_201_CREATED)
+    return JsonResponse({}, safe=False,  status=status.HTTP_202_ACCEPTED)
+
 
 
 class UserRegisterView(APIView):
@@ -134,6 +96,9 @@ class UserLoginView(APIView):
                     'access_expires': int(settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'].total_seconds()),
                     'refresh_expires': int(settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds())
                 }
+                # save into database
+
+                #
                 return Response(data, status=status.HTTP_200_OK)
 
             return Response({
@@ -148,3 +113,42 @@ class UserLoginView(APIView):
 
 
 
+@api_view(['GET','POST'])
+def addData(request):
+
+    """
+    require admin user, i will make  IsAuthencation(request.data[token] in here)
+    """
+    if request.method == 'POST':
+        device = Device()
+        device._id = ObjectId()
+        device.device_id = str(device._id)
+        device.description= request.data['description']
+        device.device_name = request.data['device_name']
+        device.schedule = []
+        device.device_type = request.data['device_type']
+        device.status = request.data['status']
+        device.unit = request.data['unit']
+        device.automation_mode = request.data['automation_mode']
+        device.phone_number = request.data['phone_number']
+        device.feed_name = str(device._id) + device.home_phonenumber
+        device.save()
+        print(device)
+        return  JsonResponse({'a':'a'}, safe=False,  status=status.HTTP_202_ACCEPTED)
+
+@api_view(['GET','POST'])
+def addHome(request):
+
+    """
+    require admin user, i will make  IsAuthencation(request.data[token] in here)
+    """
+    if request.method == 'POST':
+        home = Home()
+        home.address= request.data['address']
+        home.device_name = request.data['']
+        home.device_type = request.data['']
+        home.devices = []
+        home.phone_number = request.data['phone_number']
+        home.save()
+        print(home)
+        return  JsonResponse({'a':'a'}, safe=False,  status=status.HTTP_202_ACCEPTED)

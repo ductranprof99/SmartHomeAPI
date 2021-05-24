@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'API',
     'corsheaders',
+    'django_crontab',
 ]
 
 MIDDLEWARE = [
@@ -88,8 +89,9 @@ DATABASES = {
     'default': {
         'ENGINE': 'djongo',
         'NAME': 'smarthome1dot0',
+        'ENFORCE_SCHEMA': True,
         'CLIENT': {
-           'host': "mongodb+srv://Hao:khongco@cluster0.zx05d.mongodb.net/smarthome1dot0?retryWrites=true&w=majority",
+           'host': os.getenv('DATABASE_URL'),
         }
     }
 }
@@ -118,7 +120,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Ho_chi_minh'
 
 USE_I18N = True
 
@@ -170,3 +172,37 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
 }
+
+
+CRONJOBS = [
+    ('*/2 * * * *', 'API.cron.___',)
+]
+"""
+1. Add django_crontab to INSTALLED_APPS in your django project’s settings.py
+==========
+
+2. this cronjobs run variable above control which job run at specific time
+ ('* * * * *','app.scriptfile.cron_function', ['pos_arg1', 'pos_arg2'], {'verbose': 'key_arg'} ) #not include .py ext args is
+arg is argument of function
+
+==========
+3.1:  Run this command to add all the defined CRONJOBS to crontab(*nix cron utility). Make sure to run this command every time CRONJOBS is changed in any way.
+> python manage.py crontab add
+3.2:  To get all the active CRONJOBS, run the following command
+> python manage.py crontab show
+3.3:  To remove all the defined CRONJOBS from crontab, run the following command
+python manage.py crontab remove
+==========
+* * * * *
+Minute (0 – 59)
+Hour (0 – 23)
+Day of the month(1 – 31)
+Month (1 – 12)
+Week day (0 – 6)
+"""
+# 2 * * * *  [job] run at 2 minute of every hour ie 00:02, 01:02, 02:02, 03:02 ... et cetera.
+# 10 8 * * * [job] corresponds to the job schedule at 8:10 of every day
+# 0 6-8 * * * [job]  above job will run once every hour between 6:00 am and 8:00 am every day.
+# 2,4,6 * * * * [job] job will run three times every hour at 2nd, 4th and 6th minute.
+# */2 * * 3 * [job] job run at every 2nd minute of 3rd month for all hours and for all days
+
