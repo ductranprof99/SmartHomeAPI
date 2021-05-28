@@ -43,17 +43,17 @@ def home_user(request,phonenumber:str,deviceOrder = None):
             res = {"home_id":home_data[0]['phone_number'],'devices':[]}
             device_ord = DeviceOnHomeSerializer(devices_led, many=True).data
             for d in device_ord:
-                a = {'device_id':device_ord.index(d)}
+                a = {'device_id':device_ord.index(d)+1}
                 a.update(dict(d))
                 res['devices'] += [a]
             return JsonResponse(res, safe=False,  status=status.HTTP_202_ACCEPTED)
         else:
             device_ord = dict(DeviceDetailSerializer(devices_led,many=True).data[deviceOrder-1])
             order = device_ord.pop('device_id')
-            print(order)
             schedules_led = schedules.filter(device_id=order)
             schedule_ord = ScheduleDisplaySerializer(schedules_led,many=True).data
             result = {'device_id':deviceOrder}
+            result.update(device_ord)
             result['schedules'] = []
             for sched in schedule_ord:
                 a = {'schedule_id':schedule_ord.index(sched)+1}

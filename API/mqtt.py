@@ -102,7 +102,9 @@ def message(client, topic_id, payload):
             save = datetime.now().strftime("%d-%b-%Y (%H:%M:%S.%f)")
             # find device_id from database, it easier but need to implement later
             device_id = db['API_device'].find_one({'feed_name':topic_id})['device_id'] 
+            phone_number = db['API_device'].find_one({'feed_name':topic_id})['phone_number'] 
             status = analizer.anal_payload(topic_id,save,payload,device_id)  # device_id add later
+            context = {'phone_number': phone_number,'device_id':device_id,'status': status[0]}
             db['API_device'].update_one({ "feed_name": topic_id },{ "$set": { "status": status[0] ,'device_type':status[1]} })
             print(payload)
 

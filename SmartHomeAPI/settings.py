@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'API',
     'corsheaders',
     'django_crontab',
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -80,7 +81,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'SmartHomeAPI.wsgi.application'
 
-
+ASGI_APPLICATION = 'SmartHomeAPI.routing.application'
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
