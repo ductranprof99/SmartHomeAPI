@@ -9,7 +9,7 @@ class User(AbstractUser):
     last_login = None
     is_normaluser = None
     is_superuser = None
-
+    is_online = models.BooleanField(default=False,null=False,blank=False)
     password = models.CharField(max_length=100)
     phone_number = models.CharField(max_length=100, unique=True)
     USERNAME_FIELD = 'phone_number'
@@ -63,6 +63,7 @@ class Home(models.Model):
     home_name = models.CharField(max_length=30,blank=False,null=False)
     phone_number = models.CharField(max_length=30,blank=False,null=False,unique=True,default="required phone number")
     address =  models.CharField(max_length=100,blank=False,null=False)
+    is_online = models.BooleanField(default=False,null=False,blank=False)
     devices = models.ArrayField(
         model_container=DeviceNested,
         null=True,

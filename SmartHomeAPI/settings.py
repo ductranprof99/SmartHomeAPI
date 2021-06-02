@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'API',
     'corsheaders',
     'django_crontab',
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -80,7 +81,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'SmartHomeAPI.wsgi.application'
 
-
+ASGI_APPLICATION = 'SmartHomeAPI.routing.application'
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
@@ -114,6 +115,14 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("localhost", 6379)],
+        },
+    },
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/3.2/topics/i18n/

@@ -3,6 +3,12 @@ from datetime import datetime
 import sys, os
 import pymongo
 from . import analizer
+
+
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+
+
 cluster = pymongo.MongoClient(host=os.getenv('DATABASE_URL'))
 db = cluster.smarthome1dot0
 ADAFRUIT_ADMIN_USERNAME = os.getenv('ADAFRUIT_ADMIN_USERNAME')
@@ -102,7 +108,21 @@ def message(client, topic_id, payload):
             save = datetime.now().strftime("%d-%b-%Y (%H:%M:%S.%f)")
             # find device_id from database, it easier but need to implement later
             device_id = db['API_device'].find_one({'feed_name':topic_id})['device_id'] 
+            phone_number = db['API_device'].find_one({'feed_name':topic_id})['phone_number'] 
+            is_user_online = db['API_home'].find_one({'phone_number':phone_number})['is_online'] 
             status = analizer.anal_payload(topic_id,save,payload,device_id)  # device_id add later
+            if is_user_online:
+
+                context = {'phone_number': phone_number,'device_id':device_id,'status': status[0]}
+
+                channel_layer = get_channel_layer()
+                async_to_sync(channel_layer.group_send)(
+                    phone_number,
+                    {
+                        'type': 'send_message_to_frontend',
+                        'message': "event_trigered_from_views"
+                    }
+                ) 
             db['API_device'].update_one({ "feed_name": topic_id },{ "$set": { "status": status[0] ,'device_type':status[1]} })
             print(payload)
 
