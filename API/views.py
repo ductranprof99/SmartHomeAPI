@@ -15,8 +15,9 @@ from rest_framework.response import Response
 from SmartHomeAPI import settings
 from . import mqtt
 from ast import literal_eval
-import API.stringProcess
-
+import pymongo,os
+cluster = pymongo.MongoClient(host=os.getenv('DATABASE_URL'))
+db = cluster.smarthome1dot0
 @api_view(['GET','POST'])
 def allusers(request):
     homes = Home.objects.all()
@@ -30,6 +31,7 @@ def allusers(request):
 
 @api_view(['GET','POST'])
 def home_user(request,phonenumber:str,deviceOrder = None):
+    db['API_home'].find_one_and_update({'phone_number':phonenumber},{ "$set": {'is_online':True}})
     command = {'ON':'0','OFF':'1'}
     homes = Home.objects.all()
     devices = Device.objects.all()
@@ -112,7 +114,7 @@ class UserLoginView(APIView):
                     'refresh_expires': int(settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds())
                 }
                 # save into database
-
+                
                 #
                 return Response(data, status=status.HTTP_200_OK)
 
