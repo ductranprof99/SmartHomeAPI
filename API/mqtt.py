@@ -118,7 +118,7 @@ def message(client, topic_id, payload):
                     if i['device_id'] == device['device_id']:
                         break;
                     a+=1
-                context = {'device_id':a ,'value': status[0]}
+                context = {'device_id': a ,'value': status[0]}
                 channel_layer = get_channel_layer()
                 async_to_sync(channel_layer.group_send)(
                     phone_number,
@@ -127,7 +127,7 @@ def message(client, topic_id, payload):
                         'message': context
                     }
                 ) 
-            db['API_device'].update_one({ "feed_name": topic_id },{ "$set": { "status": status[0] ,'control_type':status[1]} })
+            db['API_device'].update_one({ "feed_name": topic_id },{ "$set": { "status": status[0] ,'control_type':status[1],'unit':status[2]} })
             print(payload)
 
 

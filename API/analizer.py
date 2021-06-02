@@ -16,3 +16,10 @@ def anal_payload(topic_id,time,payload,device_id):
     new_history.unit = data_analed['unit']
     new_history.save()
     return [data_analed['data'],data_analed['name'],data_analed['unit']]
+
+
+def anal_value(value:str,device_type):
+    if device_type == "temperature":
+        des = value.split('-')
+        return des
+    else: return value

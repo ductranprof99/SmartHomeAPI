@@ -13,8 +13,8 @@ from django.contrib.auth import authenticate
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.response import Response
 from SmartHomeAPI import settings
-from . import mqtt
 from ast import literal_eval
+from . import mqtt
 import pymongo,os
 cluster = pymongo.MongoClient(host=os.getenv('DATABASE_URL'))
 db = cluster.smarthome1dot0
@@ -32,14 +32,13 @@ def allusers(request):
 @api_view(['GET','POST'])
 def home_user(request,phonenumber:str,deviceOrder = None):
     db['API_home'].find_one_and_update({'phone_number':phonenumber},{ "$set": {'is_online':True}})
-    command = {'ON':'0','OFF':'1'}
     homes = Home.objects.all()
     devices = Device.objects.all()
     schedules = Schedule.objects.all()
     homes = homes.filter(phone_number=phonenumber)
     home_data = HomeSerializer(homes, many=True).data
     devices_led = devices.filter(phone_number=phonenumber)
-    data_form = {'id':'','name':'','data':'','unit':''}
+    data_form = {"id":"","name":"","data":"","unit":""}
     if request.method == 'GET':
         if deviceOrder == None:
             res = {"home_id":home_data[0]['phone_number'],'devices':[]}
@@ -60,15 +59,17 @@ def home_user(request,phonenumber:str,deviceOrder = None):
             for sched in schedule_ord:
                 a = {'schedule_id':schedule_ord.index(sched)+1}
                 a.update(dict(sched))
+                if a['is_repeat']: 
+                    a['repeat_day'] = literal_eval(a['repeat_day'])
                 result['schedules'] += [a]
             return JsonResponse(result, safe=False,  status=status.HTTP_202_ACCEPTED)
     if request.method == 'POST':
         if deviceOrder == None:
             device_ord = dict(DeviceCommandSerializer(devices_led,many=True).data[request.data['device_id']-1])
-            data_form['unit'] = device_ord['unit']
-            data_form['id'] = device_ord['feed_name']
-            data_form['data'] = command[request.data['data']]
-            data_form['name'] = device_ord['device_type']
+            data_form["unit"] = device_ord['unit']
+            data_form["id"] = device_ord['feed_name']
+            data_form["data"] = request.data['data']
+            data_form["name"] = device_ord['control_type']
             mqtt.access.sendDataToFeed(device_ord['feed_name'],str(data_form))
             return JsonResponse(request.data, safe=False,  status=status.HTTP_201_CREATED)
         else :
