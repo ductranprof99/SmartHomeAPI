@@ -3,3 +3,4 @@ __pycache__
 .vscode
 key.txt
 migrations
+dump.rdb

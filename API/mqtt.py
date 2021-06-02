@@ -120,7 +120,7 @@ def message(client, topic_id, payload):
                     phone_number,
                     {
                         'type': 'send_message_to_frontend',
-                        'message': "event_trigered_from_views"
+                        'message': "asdfasdf"
                     }
                 ) 
             db['API_device'].update_one({ "feed_name": topic_id },{ "$set": { "status": status[0] ,'device_type':status[1]} })
