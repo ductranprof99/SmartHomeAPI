@@ -107,20 +107,24 @@ def message(client, topic_id, payload):
         if topic_id == feed_id:
             save = datetime.now().strftime("%d-%b-%Y (%H:%M:%S.%f)")
             # find device_id from database, it easier but need to implement later
-            device_id = db['API_device'].find_one({'feed_name':topic_id})['device_id'] 
+            device = db['API_device'].find_one({'feed_name':topic_id})
             phone_number = db['API_device'].find_one({'feed_name':topic_id})['phone_number'] 
-            is_user_online = db['API_home'].find_one({'phone_number':phone_number})['is_online'] 
-            status = analizer.anal_payload(topic_id,save,payload,device_id)  # device_id add later
-            if is_user_online:
-
-                context = {'phone_number': phone_number,'device_id':device_id,'status': status[0]}
-
+            this_home = db['API_home'].find_one({'phone_number':phone_number})
+            status = analizer.anal_payload(topic_id,save,payload,device['device_id'])  # device_id add later
+            if this_home['is_online']:
+                list_device = this_home['devices']
+                a = 1
+                for i in list_device:
+                    if i['device_id'] == device['device_id']:
+                        break;
+                    a+=1
+                context = {'device_id':a ,'value': status[0]}
                 channel_layer = get_channel_layer()
                 async_to_sync(channel_layer.group_send)(
                     phone_number,
                     {
                         'type': 'send_message_to_frontend',
-                        'message': "asdfasdf"
+                        'message': context
                     }
                 ) 
             db['API_device'].update_one({ "feed_name": topic_id },{ "$set": { "status": status[0] ,'device_type':status[1]} })
