@@ -127,7 +127,7 @@ def message(client, topic_id, payload):
                         'message': context
                     }
                 ) 
-            db['API_device'].update_one({ "feed_name": topic_id },{ "$set": { "status": status[0] ,'device_type':status[1]} })
+            db['API_device'].update_one({ "feed_name": topic_id },{ "$set": { "status": status[0] ,'control_type':status[1]} })
             print(payload)
 
 

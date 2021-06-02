@@ -43,6 +43,7 @@ class Device(models.Model):
     feed_name =  models.CharField(max_length=30,blank=False,null=False)
     description = models.CharField(max_length=50,blank=True,null=True)
     device_type = models.CharField(max_length=30,blank=False,null=False)
+    control_type = models.CharField(max_length=30,blank=False,null=False)
     status = models.CharField(max_length=30,blank=False,null=False)
     unit = models.CharField(max_length=30,blank=False,null=False,default="")
     automation_mode = models.IntegerField(null=False,validators=[MaxValueValidator(2),MinValueValidator(0)])
