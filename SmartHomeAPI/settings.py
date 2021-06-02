@@ -81,7 +81,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'SmartHomeAPI.wsgi.application'
 
-ASGI_APPLICATION = 'SmartHomeAPI.routing.application'
+ASGI_APPLICATION = 'SmartHomeAPI.asgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
