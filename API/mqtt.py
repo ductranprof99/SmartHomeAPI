@@ -114,7 +114,7 @@ def message(client, topic_id, payload):
             if is_user_online:
 
                 context = {'phone_number': phone_number,'device_id':device_id,'status': status[0]}
-                
+
                 channel_layer = get_channel_layer()
                 async_to_sync(channel_layer.group_send)(
                     phone_number,

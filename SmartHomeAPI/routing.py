@@ -12,7 +12,6 @@ application = ProtocolTypeRouter({
     "websocket": AuthMiddlewareStack(
         URLRouter([
             path('@<str:phonenumber>/devices',DeviceConsumer),
-            path('@<str:phonenumber>/devices/<int:deviceOrder>',DeviceConsumer),
         ])
     ),
 })
