@@ -13,6 +13,7 @@ cluster = pymongo.MongoClient(host=os.getenv('DATABASE_URL'))
 db = cluster.smarthome1dot0
 ADAFRUIT_ADMIN_USERNAME = os.getenv('ADAFRUIT_ADMIN_USERNAME')
 ADAFRUIT_ADMIN_KEY = os.getenv('ADAFRUIT_IO_KEY')
+
 class AdaConnect():
     def __init__(self,username,key):
         self.aio = Client(username,key)
@@ -127,7 +128,7 @@ def message(client, topic_id, payload):
                         'message': context
                     }
                 ) 
-            db['API_device'].update_one({ "feed_name": topic_id },{ "$set": { "status": status[0] ,'control_type':status[1],'unit':status[2]} })
+            db['API_device'].update_one({ "feed_name": topic_id },{ "$set": { "status": status[0] ,'control_type':status[1],'unit':status[2],'data_id':status[3]} })
             print(payload)
 
 

@@ -15,7 +15,7 @@ def anal_payload(topic_id,time,payload,device_id):
     new_history.device_type = data_analed['name']
     new_history.unit = data_analed['unit']
     new_history.save()
-    return [data_analed['data'],data_analed['name'],data_analed['unit']]
+    return [data_analed['data'],data_analed['name'],data_analed['unit'],data_analed['id']]
 
 
 def anal_value(value:str,device_type):

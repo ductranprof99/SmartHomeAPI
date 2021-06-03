@@ -41,6 +41,7 @@ class Device(models.Model):
     phone_number =  models.CharField(max_length=30,blank=False,null=False)
     device_name = models.CharField(max_length=30,blank=False,null=False)
     feed_name =  models.CharField(max_length=30,blank=False,null=False)
+    data_id = models.CharField(max_length=30,blank=False,null=False,default="")
     description = models.CharField(max_length=50,blank=True,null=True)
     device_type = models.CharField(max_length=30,blank=False,null=False)
     control_type = models.CharField(max_length=30,blank=False,null=False)

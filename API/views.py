@@ -18,6 +18,8 @@ from . import mqtt
 import pymongo,os
 cluster = pymongo.MongoClient(host=os.getenv('DATABASE_URL'))
 db = cluster.smarthome1dot0
+
+
 @api_view(['GET','POST'])
 def allusers(request):
     homes = Home.objects.all()
@@ -69,13 +71,21 @@ def home_user(request,phonenumber:str,deviceOrder = None):
             if(device_ord['unit'] == None):
                 data_form["unit"] = ""
             else:  data_form["unit"] = device_ord['unit']
-            data_form["id"] = device_ord['feed_name']
+            data_form["id"] = device_ord['data_id']
             data_form["data"] = request.data['data']
             data_form["name"] = device_ord['control_type']
             mqtt.access.sendDataToFeed(device_ord['feed_name'],str(json.dumps(data_form)))
             return JsonResponse(request.data, safe=False,  status=status.HTTP_201_CREATED)
         else :
-            pass
+            device_ord = dict(DeviceCommandSerializer(devices_led,many=True).data[deviceOrder-1])
+            if(device_ord['unit'] == None):
+                data_form["unit"] = ""
+            else:  data_form["unit"] = device_ord['unit']
+            data_form["id"] = device_ord['data_id']
+            data_form["data"] = request.data['data']
+            data_form["name"] = device_ord['control_type']
+            mqtt.access.sendDataToFeed(device_ord['feed_name'],str(json.dumps(data_form)))
+            return JsonResponse(request.data, safe=False,  status=status.HTTP_201_CREATED)
     return JsonResponse({}, safe=False,  status=status.HTTP_400_BAD_REQUEST)
 
 
