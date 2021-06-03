@@ -3,7 +3,7 @@ from datetime import datetime
 import sys, os
 import pymongo
 from . import analizer
-
+import json
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
@@ -140,4 +140,4 @@ client.on_connect    = connected
 client.on_disconnect = disconnected
 client.on_message    = message
 client.connect()
-print('Publishing a new message every 5 seconds (press Ctrl-C to quit)...')
+print('Publishing a new message every 40 seconds (press Ctrl-C to quit)...')

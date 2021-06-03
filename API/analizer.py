@@ -2,7 +2,7 @@
 """
 xu ly value cho feed, the form of the feed kinda retard, so i must change that shit
 """
-
+import json
 from ast import literal_eval
 def anal_payload(topic_id,time,payload,device_id):
     data_analed = literal_eval(payload)
@@ -23,3 +23,7 @@ def anal_value(value:str,device_type):
         des = value.split('-')
         return des
     else: return value
+
+class mydict(dict):
+        def __str__(self):
+            return json.dumps(self)

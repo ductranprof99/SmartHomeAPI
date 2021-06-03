@@ -66,11 +66,13 @@ def home_user(request,phonenumber:str,deviceOrder = None):
     if request.method == 'POST':
         if deviceOrder == None:
             device_ord = dict(DeviceCommandSerializer(devices_led,many=True).data[request.data['device_id']-1])
-            data_form["unit"] = device_ord['unit']
+            if(device_ord['unit'] == None):
+                data_form["unit"] = ""
+            else:  data_form["unit"] = device_ord['unit']
             data_form["id"] = device_ord['feed_name']
             data_form["data"] = request.data['data']
             data_form["name"] = device_ord['control_type']
-            mqtt.access.sendDataToFeed(device_ord['feed_name'],str(data_form))
+            mqtt.access.sendDataToFeed(device_ord['feed_name'],str(json.dumps(data_form)))
             return JsonResponse(request.data, safe=False,  status=status.HTTP_201_CREATED)
         else :
             pass
