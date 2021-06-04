@@ -1,4 +1,4 @@
-from Adafruit_IO import Client,Data,Feed,MQTTClient
+from Adafruit_IO import Client,Feed,MQTTClient
 from datetime import datetime
 import sys, os
 from . import analizer
@@ -7,8 +7,6 @@ from channels.layers import get_channel_layer
 from .mongo import db
 
 
-ADAFRUIT_ADMIN_USERNAME = os.getenv('ADAFRUIT_ADMIN_USERNAME')
-ADAFRUIT_ADMIN_KEY = os.getenv('ADAFRUIT_IO_KEY')
 list_account = db['ADA_accounts']
 
 
