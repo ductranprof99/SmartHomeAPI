@@ -1,3 +1,8 @@
+from Adafruit_IO import client
 from . import mqtt
+from . import mongo
 
-mqtt.client.loop_background()
+mongo.update_keys()
+
+for i in mqtt.clients:
+    i.loop_background()

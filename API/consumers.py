@@ -1,7 +1,7 @@
 from asgiref.sync import async_to_sync
 from channels.generic.websocket import WebsocketConsumer
 import json
-
+from API.mongo import db
 class DeviceConsumer(WebsocketConsumer):
     def connect(self):
         # self.room_name = self.scope['url_route']['kwargs']['room_name']
@@ -20,6 +20,7 @@ class DeviceConsumer(WebsocketConsumer):
             self.phone_number,
             self.channel_name
         )
+        db['API_home'].find_one_and_update({'phone_number':self.phone_number},{ "$set": {'is_online':False}})
         print("DISCONNECED CODE: ",code)
 
     def receive(self, text_data=None, bytes_data=None):

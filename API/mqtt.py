@@ -1,18 +1,16 @@
 from Adafruit_IO import Client,Data,Feed,MQTTClient
 from datetime import datetime
 import sys, os
-import pymongo
 from . import analizer
-import json
-
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
+from .mongo import db
 
 
-cluster = pymongo.MongoClient(host=os.getenv('DATABASE_URL'))
-db = cluster.smarthome1dot0
 ADAFRUIT_ADMIN_USERNAME = os.getenv('ADAFRUIT_ADMIN_USERNAME')
 ADAFRUIT_ADMIN_KEY = os.getenv('ADAFRUIT_IO_KEY')
+list_account = db['ADA_accounts']
+
 
 class AdaConnect():
     def __init__(self,username,key):
@@ -90,8 +88,17 @@ class AdaConnect():
         return None
 
 
-access = AdaConnect(ADAFRUIT_ADMIN_USERNAME, ADAFRUIT_ADMIN_KEY)
-feed_name_array = [i.name for i in access.feeds]
+LIST_ACCOUNT_QUERIED = list(list_account.find({},{"_id":0, "key_index": 0 }))
+
+
+try:
+    ACESS = [AdaConnect(ACCOUNT['user_name'], ACCOUNT['ada_key']) for ACCOUNT in LIST_ACCOUNT_QUERIED]
+except Exception:
+    print('cannot connect')
+feed_name_array = []
+
+for i in range(len(LIST_ACCOUNT_QUERIED)):
+    feed_name_array += [c.name for c in ACESS[i].feeds]
 
 
 def connected(client):
@@ -101,7 +108,7 @@ def connected(client):
 
 def disconnected(client):
     print('Disconnected from Adafruit IO!')
-    sys.exit(1)
+    
 
 def message(client, topic_id, payload):
     for feed_id in feed_name_array:
@@ -109,36 +116,39 @@ def message(client, topic_id, payload):
             save = datetime.now().strftime("%d-%b-%Y (%H:%M:%S.%f)")
             # find device_id from database, it easier but need to implement later
             device = db['API_device'].find_one({'feed_name':topic_id})
-            phone_number = db['API_device'].find_one({'feed_name':topic_id})['phone_number'] 
-            this_home = db['API_home'].find_one({'phone_number':phone_number})
-            status = analizer.anal_payload(topic_id,save,payload,device['device_id'])  # device_id add later
-            if this_home['is_online']:
-                list_device = this_home['devices']
-                a = 1
-                for i in list_device:
-                    if i['device_id'] == device['device_id']:
-                        break;
-                    a+=1
-                context = {'device_id': a ,'value': status[0]}
-                channel_layer = get_channel_layer()
-                async_to_sync(channel_layer.group_send)(
-                    phone_number,
-                    {
-                        'type': 'send_message_to_frontend',
-                        'message': context
-                    }
-                ) 
-            db['API_device'].update_one({ "feed_name": topic_id },{ "$set": { "status": status[0] ,'control_type':status[1],'unit':status[2],'data_id':status[3]} })
+            if device != None:
+                phone_number = db['API_device'].find_one({'feed_name':topic_id})['phone_number'] 
+                this_home = db['API_home'].find_one({'phone_number':phone_number})
+                status = analizer.anal_payload(topic_id,save,payload,device['device_id'])  # device_id add later
+                if this_home['is_online']:
+                    list_device = this_home['devices']
+                    a = 1
+                    for i in list_device:
+                        if i['device_id'] == device['device_id']:
+                            break;
+                        a+=1
+                    context = {'device_id': a ,'value': status[0]}
+                    channel_layer = get_channel_layer()
+                    async_to_sync(channel_layer.group_send)(
+                        phone_number,
+                        {
+                            'type': 'send_message_to_frontend',
+                            'message': context
+                        }
+                    ) 
+                db['API_device'].update_one({ "feed_name": topic_id },{ "$set": { "status": status[0] ,'control_type':status[1],'unit':status[2],'data_id':status[3]} })
             print(payload)
 
 
     
-client = MQTTClient(ADAFRUIT_ADMIN_USERNAME, ADAFRUIT_ADMIN_KEY)
+clients = [MQTTClient(ACCOUNT['user_name'], ACCOUNT['ada_key']) for ACCOUNT in LIST_ACCOUNT_QUERIED]
 
-# call this whole fucking shit on another script
-
-client.on_connect    = connected
-client.on_disconnect = disconnected
-client.on_message    = message
-client.connect()
+# call loop fucking shit on another script
+for client in clients:
+    client.on_connect    = connected
+    client.on_disconnect = disconnected
+    client.on_message    = message
+    client.connect()
+    print('//////////////////////////////')
+    print('//////////////////////////////')
 print('Publishing a new message every 40 seconds (press Ctrl-C to quit)...')

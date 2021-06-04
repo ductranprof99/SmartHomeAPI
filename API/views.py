@@ -14,7 +14,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.response import Response
 from SmartHomeAPI import settings
 from ast import literal_eval
-from . import mqtt
+from . import  mqtt
 import pymongo,os
 cluster = pymongo.MongoClient(host=os.getenv('DATABASE_URL'))
 db = cluster.smarthome1dot0
@@ -74,7 +74,10 @@ def home_user(request,phonenumber:str,deviceOrder = None):
             data_form["id"] = device_ord['data_id']
             data_form["data"] = request.data['data']
             data_form["name"] = device_ord['control_type']
-            mqtt.access.sendDataToFeed(device_ord['feed_name'],str(json.dumps(data_form)))
+            
+            # sua cho dung ACESS se ve dung account
+            mqtt.ACESS[2].sendDataToFeed(device_ord['feed_name'],str(json.dumps(data_form)))
+
             return JsonResponse(request.data, safe=False,  status=status.HTTP_201_CREATED)
         else :
             device_ord = dict(DeviceCommandSerializer(devices_led,many=True).data[deviceOrder-1])
@@ -84,7 +87,10 @@ def home_user(request,phonenumber:str,deviceOrder = None):
             data_form["id"] = device_ord['data_id']
             data_form["data"] = request.data['data']
             data_form["name"] = device_ord['control_type']
-            mqtt.access.sendDataToFeed(device_ord['feed_name'],str(json.dumps(data_form)))
+
+            # sua cho dung ACESS se ve dung account
+            mqtt.ACESS[2].sendDataToFeed(device_ord['feed_name'],str(json.dumps(data_form)))
+
             return JsonResponse(request.data, safe=False,  status=status.HTTP_201_CREATED)
     return JsonResponse({}, safe=False,  status=status.HTTP_400_BAD_REQUEST)
 
