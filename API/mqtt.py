@@ -105,11 +105,8 @@ def connected(client):
     print('Listening for changes on all shit')
     for i in feed_name_array:
         client.subscribe(i)
-
 def disconnected(client):
     print('Disconnected from Adafruit IO!')
-    
-
 def message(client, topic_id, payload):
     for feed_id in feed_name_array:
         if topic_id == feed_id:
@@ -140,15 +137,16 @@ def message(client, topic_id, payload):
             print(payload)
 
 
-    
-clients = [MQTTClient(ACCOUNT['user_name'], ACCOUNT['ada_key']) for ACCOUNT in LIST_ACCOUNT_QUERIED]
+# this things for multiple account
+# clients = [MQTTClient(ACCOUNT['user_name'], ACCOUNT['ada_key']) for ACCOUNT in LIST_ACCOUNT_QUERIED]
 
+# for test server 
+clients = [MQTTClient(LIST_ACCOUNT_QUERIED[2]['user_name'], LIST_ACCOUNT_QUERIED[2]['ada_key'])]
 # call loop fucking shit on another script
 for client in clients:
     client.on_connect    = connected
     client.on_disconnect = disconnected
     client.on_message    = message
     client.connect()
-    print('//////////////////////////////')
-    print('//////////////////////////////')
+    print('///////////// pre check modify hehehehehehee /////////////////')
 print('Publishing a new message every 40 seconds (press Ctrl-C to quit)...')
