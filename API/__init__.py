@@ -4,5 +4,5 @@ from . import mongo
 
 mongo.update_keys()
 
-for i in mqtt.clients:
-    i.loop_background()
+for client_ in mqtt.mqttClients:
+    mqtt.mqttClients[client_].loop_background()

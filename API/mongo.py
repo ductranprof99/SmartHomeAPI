@@ -18,7 +18,7 @@ def update_keys():
             if 'key' in key:
                 COLECTION.update_one({'key_index': key}, { "$set": { "ada_key": OREO_CHOCOPIE[key] } })
     except Exception:
-        print("Connection fucked up!")
+        print("Cannot get the keys from school provided server")
 
 def get_map():
     pass

@@ -89,15 +89,20 @@ class AdaConnect():
 LIST_ACCOUNT_QUERIED = list(list_account.find({},{"_id":0, "key_index": 0 }))
 
 
-try:
-    ACESS = [AdaConnect(ACCOUNT['user_name'], ACCOUNT['ada_key']) for ACCOUNT in LIST_ACCOUNT_QUERIED]
-except Exception:
-    print('cannot connect')
+accesses = {}
+mqttClients = {}
+for account in LIST_ACCOUNT_QUERIED:
+    user_name = account['user_name']
+    ada_key = account['ada_key']
+    try:
+        accesses[user_name] = AdaConnect(user_name, ada_key)
+        mqttClients[user_name] = MQTTClient(user_name, ada_key)
+    except:
+        print("Cannot connect to adafruitIO user: " + user_name)
+
 feed_name_array = []
-
-for i in range(len(LIST_ACCOUNT_QUERIED)):
-    feed_name_array += [c.name for c in ACESS[i].feeds]
-
+for user_name in accesses:
+    feed_name_array += user_name
 
 def connected(client):
     print('Listening for changes on all shit')
@@ -138,13 +143,11 @@ def message(client, topic_id, payload):
 # this things for multiple account
 # clients = [MQTTClient(ACCOUNT['user_name'], ACCOUNT['ada_key']) for ACCOUNT in LIST_ACCOUNT_QUERIED]
 
-# for test server 
-clients = [MQTTClient(LIST_ACCOUNT_QUERIED[2]['user_name'], LIST_ACCOUNT_QUERIED[2]['ada_key'])]
 # call loop fucking shit on another script
-for client in clients:
+for client_ in mqttClients:
+    client = mqttClients[client_]
     client.on_connect    = connected
     client.on_disconnect = disconnected
     client.on_message    = message
     client.connect()
     print('///////////// pre check modify hehehehehehee /////////////////')
-print('Publishing a new message every 40 seconds (press Ctrl-C to quit)...')
