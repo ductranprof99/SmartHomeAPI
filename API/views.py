@@ -14,7 +14,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.response import Response
 from SmartHomeAPI import settings
 from ast import literal_eval
-from . import  mqtt
+from API import Adafruit
 import pymongo,os
 cluster = pymongo.MongoClient(host=os.getenv('DATABASE_URL'))
 db = cluster.smarthome1dot0
@@ -55,6 +55,8 @@ def home_user(request,phonenumber:str,deviceOrder = None):
             order = device_ord.pop('device_id')
             schedules_led = schedules.filter(device_id=order)
             schedule_ord = ScheduleDisplaySerializer(schedules_led,many=True).data
+            
+            #TODO Return the raw objectid without the need of unnecessary mapping
             result = {'device_id':deviceOrder}
             result.update(device_ord)
             result['schedules'] = []
@@ -76,7 +78,7 @@ def home_user(request,phonenumber:str,deviceOrder = None):
             data_form["name"] = device_ord['control_type']
             
             # sua cho dung ACESS se ve dung account
-            mqtt.ACESS[2].sendDataToFeed(device_ord['feed_name'],str(json.dumps(data_form)))
+            # Ada.sendDataToFeed(device_ord['feed_name'],str(json.dumps(data_form)))
 
             return JsonResponse(request.data, safe=False,  status=status.HTTP_201_CREATED)
         else :
@@ -89,7 +91,8 @@ def home_user(request,phonenumber:str,deviceOrder = None):
             data_form["name"] = device_ord['control_type']
 
             # sua cho dung ACESS se ve dung account
-            mqtt.ACESS[2].sendDataToFeed(device_ord['feed_name'],str(json.dumps(data_form)))
+            #TODO Find and replace with the coresponding ada username for the targeted feed
+            Adafruit.accesses["#TODO"].sendDataToFeed(device_ord['feed_name'],str(json.dumps(data_form)))
 
             return JsonResponse(request.data, safe=False,  status=status.HTTP_201_CREATED)
     return JsonResponse({}, safe=False,  status=status.HTTP_400_BAD_REQUEST)
