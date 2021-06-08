@@ -9,6 +9,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.response import Response
 from SmartHomeAPI import settings
 from rest_framework.permissions import IsAuthenticated
+from rest_framework import request
 
 
 class UserRegisterView(APIView):
@@ -63,8 +64,8 @@ class UserLoginView(APIView):
         }, status=status.HTTP_400_BAD_REQUEST)
 
 class TestAuth(APIView):
-	permission_classes = (IsAuthenticated,)
-	
-	def get(self, request):
-		content = {'message': 'Hello, ' + self.request.user.phone_number}
-		return Response(content)
+    permission_classes = (IsAuthenticated,)
+    def get(self, request:request.Request):
+        print(self.request.user.password)
+        content = {'message': 'Hello, ' + self.request.user.phone_number}
+        return Response(content)

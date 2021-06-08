@@ -16,6 +16,7 @@ from SmartHomeAPI import settings
 from ast import literal_eval
 from API import Adafruit
 import pymongo,os
+from rest_framework.permissions import IsAuthenticated
 cluster = pymongo.MongoClient(host=os.getenv('DATABASE_URL'))
 db = cluster.smarthome1dot0
 
@@ -31,71 +32,43 @@ def allusers(request):
     # print(result)
     return JsonResponse(result, safe=False,  status=status.HTTP_202_ACCEPTED)
 
-@api_view(['GET','POST'])
-def home_user(request,phonenumber:str,deviceOrder = None):
-    db['API_home'].find_one_and_update({'phone_number':phonenumber},{ "$set": {'is_online':True}})
-    homes = Home.objects.all()
-    devices = Device.objects.all()
-    schedules = Schedule.objects.all()
-    homes = homes.filter(phone_number=phonenumber)
-    home_data = HomeSerializer(homes, many=True).data
-    devices_led = devices.filter(phone_number=phonenumber)
-    data_form = {"id":"","name":"","data":"","unit":""}
-    if request.method == 'GET':
-        if deviceOrder == None:
+class DeviceList(APIView):
+    permission_classes = (IsAuthenticated,)
+	
+    def get(self, request, phonenumber:str):
+    # def home_user(request,phonenumber:str,deviceOrder = None):
+        db['API_home'].find_one_and_update({'phone_number':phonenumber},{ "$set": {'is_online':True}})
+        homes = Home.objects.all()
+        devices = Device.objects.all()
+        homes = homes.filter(phone_number=phonenumber)
+        home_data = HomeSerializer(homes, many=True).data
+        devices_led = devices.filter(phone_number=phonenumber)
+        if request.method == 'GET':
             res = {"home_id":home_data[0]['phone_number'],'devices':[]}
             device_ord = DeviceOnHomeSerializer(devices_led, many=True).data
             for d in device_ord:
-                a = {'device_id':device_ord.index(d)+1}
-                a.update(dict(d))
-                res['devices'] += [a]
+                res['devices'] += [d]
             return JsonResponse(res, safe=False,  status=status.HTTP_202_ACCEPTED)
-        else:
-            device_ord = dict(DeviceDetailSerializer(devices_led,many=True).data[deviceOrder-1])
-            order = device_ord.pop('device_id')
-            schedules_led = schedules.filter(device_id=order)
-            schedule_ord = ScheduleDisplaySerializer(schedules_led,many=True).data
-            
-            #TODO Return the raw objectid without the need of unnecessary mapping
-            result = {'device_id':deviceOrder}
-            result.update(device_ord)
-            result['schedules'] = []
-            for sched in schedule_ord:
-                a = {'schedule_id':schedule_ord.index(sched)+1}
-                a.update(dict(sched))
-                if a['is_repeat']: 
-                    a['repeat_day'] = literal_eval(a['repeat_day'])
-                result['schedules'] += [a]
-            return JsonResponse(result, safe=False,  status=status.HTTP_202_ACCEPTED)
-    if request.method == 'POST':
-        if deviceOrder == None:
-            device_ord = dict(DeviceCommandSerializer(devices_led,many=True).data[request.data['device_id']-1])
-            if(device_ord['unit'] == None):
+
+    def post(self, request, phonenumber:str):
+        db['API_home'].find_one_and_update({'phone_number':phonenumber},{ "$set": {'is_online':True}})
+        device_ord = Device.objects.get(device_id=request.data['device_id'])
+        data_form = {"id":"","name":"","data":"","unit":""}
+        if request.method == 'POST':
+            # device_ord = dict(DeviceCommandSerializer(devices_led,many=True).data[request.data['device_id']])
+            # device_ord = devices.filter(device_id=request.data['device_id'])
+            if(device_ord.unit == None):
                 data_form["unit"] = ""
-            else:  data_form["unit"] = device_ord['unit']
-            data_form["id"] = device_ord['data_id']
+            else:  data_form["unit"] = device_ord.unit
+            data_form["id"] = device_ord.data_id
             data_form["data"] = request.data['data']
-            data_form["name"] = device_ord['control_type']
+            data_form["name"] = device_ord.control_type
             
-            # sua cho dung ACESS se ve dung account
-            # Ada.sendDataToFeed(device_ord['feed_name'],str(json.dumps(data_form)))
+            
+            Adafruit.accesses[Adafruit.feedNameToUsername[device_ord.feed_name]].sendDataToFeed(device_ord.feed_name,str(json.dumps(data_form)))
 
             return JsonResponse(request.data, safe=False,  status=status.HTTP_201_CREATED)
-        else :
-            device_ord = dict(DeviceCommandSerializer(devices_led,many=True).data[deviceOrder-1])
-            if(device_ord['unit'] == None):
-                data_form["unit"] = ""
-            else:  data_form["unit"] = device_ord['unit']
-            data_form["id"] = device_ord['data_id']
-            data_form["data"] = request.data['data']
-            data_form["name"] = device_ord['control_type']
-
-            # sua cho dung ACESS se ve dung account
-            #TODO Find and replace with the coresponding ada username for the targeted feed
-            Adafruit.accesses["#TODO"].sendDataToFeed(device_ord['feed_name'],str(json.dumps(data_form)))
-
-            return JsonResponse(request.data, safe=False,  status=status.HTTP_201_CREATED)
-    return JsonResponse({}, safe=False,  status=status.HTTP_400_BAD_REQUEST)
+        return JsonResponse({}, safe=False,  status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET','POST'])
 def addDevice(request):

@@ -100,7 +100,7 @@ def define_on_message(client: MQTTClient):
         # find device_id from database, it easier but need to implement later
         device = db['API_device'].find_one({'feed_name':topic_id})
         if device != None:
-            phone_number = db['API_device'].find_one({'feed_name':topic_id})['phone_number'] 
+            phone_number = device['phone_number'] 
             this_home = db['API_home'].find_one({'phone_number':phone_number})
             try:
                 status = analizer.anal_payload(topic_id,save,payload,device['device_id'])  # device_id add later
@@ -108,13 +108,7 @@ def define_on_message(client: MQTTClient):
                 print("*** Possibly wrong published message format from adafruit!\n---Payload: " + payload)
                 return
             if this_home['is_online']:
-                list_device = this_home['devices']
-                a = 1
-                for i in list_device:
-                    if i['device_id'] == device['device_id']:
-                        break;
-                    a+=1
-                context = {'device_id': a ,'value': status[0]}
+                context = {'device_id': device['device_id'] ,'value': status[0]}
                 channel_layer = get_channel_layer()
                 async_to_sync(channel_layer.group_send)(
                     phone_number,

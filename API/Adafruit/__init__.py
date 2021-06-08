@@ -10,12 +10,15 @@ list_account = db['ADA_accounts']
 all_ada_usernames = list(list_account.find({},{"_id":0, "key_index": 0 }))
 accesses = {}
 mqttClients = {}
+feedNameToUsername = {}
 
 for account in all_ada_usernames:
     user_name = account['user_name']
     ada_key = account['ada_key']
     try:
         accesses[user_name] = adafruit.AdaConnect(user_name, ada_key)
+        for feed in accesses[user_name].feeds:
+            feedNameToUsername[feed.name] = user_name
         mqttClients[user_name] = MQTTClient(user_name, ada_key)
     except:
         print("Cannot connect to adafruitIO user: " + user_name)
