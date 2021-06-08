@@ -2,6 +2,7 @@ from . import adafruit
 from .. import mongo
 from ..mongo import db
 from Adafruit_IO import MQTTClient
+import os
 
 mongo.update_keys()
 
@@ -19,10 +20,16 @@ for account in all_ada_usernames:
     except:
         print("Cannot connect to adafruitIO user: " + user_name)
 
-for client_ in mqttClients:
-    client = mqttClients[client_]
-    client.on_connect    = adafruit.define_on_connected(client=client, accesses=accesses)
-    client.on_disconnect = adafruit.define_on_disconnected()
-    client.on_message    = adafruit.define_on_message(client=client)
-    client.connect()
-    mqttClients[client_].loop_background()
+def Listen():
+    for client_ in mqttClients:
+        client = mqttClients[client_]
+        client.on_connect    = adafruit.define_on_connected(client=client, accesses=accesses)
+        client.on_disconnect = adafruit.define_on_disconnected()
+        client.on_message    = adafruit.define_on_message(client=client)
+        client.connect()
+        mqttClients[client_].loop_background()
+
+if os.getenv("ADA_LISTEN") == 'False':
+    pass
+else:
+    Listen()
