@@ -1,8 +1,7 @@
 from django.db.models import fields
-from rest_framework import serializers 
+from rest_framework import serializers
+from rest_framework.fields import CharField 
 from API.models import *
-
- 
 
 class AllHomeSerializer(serializers.ModelSerializer):
  
@@ -23,7 +22,7 @@ class HomeDetailSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class DeviceOnHomeSerializer(serializers.ModelSerializer):
- 
+    device_id = CharField(source='_id')
     class Meta:
         model = Device
         fields = ('device_id', 'device_name', 'device_type', 'description' , 'status','automation_mode')

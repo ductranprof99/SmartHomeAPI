@@ -37,7 +37,6 @@ class ScheduleNested(models.Model):
 
 class Device(models.Model):
     _id = models.ObjectIdField(primary_key=True)
-    device_id = models.CharField(max_length=24,null=False)
     phone_number =  models.CharField(max_length=30,blank=False,null=False)
     device_name = models.CharField(max_length=30,blank=False,null=False)
     feed_name =  models.CharField(max_length=30,blank=False,null=False)

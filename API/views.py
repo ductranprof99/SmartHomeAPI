@@ -8,17 +8,10 @@ from API.models import *
 from API.serializers import *
 from rest_framework.decorators import api_view
 from rest_framework.views import APIView
-from django.contrib.auth.hashers import make_password
-from django.contrib.auth import authenticate
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from rest_framework.response import Response
-from SmartHomeAPI import settings
-from ast import literal_eval
 from API import Adafruit
-import pymongo,os
 from rest_framework.permissions import IsAuthenticated
-cluster = pymongo.MongoClient(host=os.getenv('DATABASE_URL'))
-db = cluster.smarthome1dot0
+
+from .mongo import db
 
 
 @api_view(['GET','POST'])
@@ -34,41 +27,41 @@ def allusers(request):
 
 class DeviceList(APIView):
     permission_classes = (IsAuthenticated,)
-	
+    
+    def responseUnauthed(self, id):
+        res = {"message": "Unauthorized access to " + id}
+        return JsonResponse(res, safe=False,  status=status.HTTP_401_UNAUTHORIZED)
+
     def get(self, request, phonenumber:str):
-    # def home_user(request,phonenumber:str,deviceOrder = None):
+        if self.request.user.phone_number != phonenumber:
+            return self.responseUnauthed(phonenumber)
         db['API_home'].find_one_and_update({'phone_number':phonenumber},{ "$set": {'is_online':True}})
-        homes = Home.objects.all()
-        devices = Device.objects.all()
-        homes = homes.filter(phone_number=phonenumber)
-        home_data = HomeSerializer(homes, many=True).data
-        devices_led = devices.filter(phone_number=phonenumber)
+        found_home = Home.objects.get(phone_number=phonenumber)
+        home_data = HomeSerializer(found_home, many=False).data
+        devices = Device.objects.filter(phone_number=phonenumber)
         if request.method == 'GET':
-            res = {"home_id":home_data[0]['phone_number'],'devices':[]}
-            device_ord = DeviceOnHomeSerializer(devices_led, many=True).data
+            res = {"home_id":home_data['phone_number'],'devices':[]}
+            device_ord = DeviceOnHomeSerializer(devices, many=True).data
             for d in device_ord:
                 res['devices'] += [d]
             return JsonResponse(res, safe=False,  status=status.HTTP_202_ACCEPTED)
 
     def post(self, request, phonenumber:str):
+        if self.request.user.phone_number != phonenumber:
+            return self.responseUnauthed(phonenumber)
         db['API_home'].find_one_and_update({'phone_number':phonenumber},{ "$set": {'is_online':True}})
         device_ord = Device.objects.get(device_id=request.data['device_id'])
         data_form = {"id":"","name":"","data":"","unit":""}
-        if request.method == 'POST':
-            # device_ord = dict(DeviceCommandSerializer(devices_led,many=True).data[request.data['device_id']])
-            # device_ord = devices.filter(device_id=request.data['device_id'])
-            if(device_ord.unit == None):
-                data_form["unit"] = ""
-            else:  data_form["unit"] = device_ord.unit
-            data_form["id"] = device_ord.data_id
-            data_form["data"] = request.data['data']
-            data_form["name"] = device_ord.control_type
-            
-            
-            Adafruit.accesses[Adafruit.feedNameToUsername[device_ord.feed_name]].sendDataToFeed(device_ord.feed_name,str(json.dumps(data_form)))
+        if(device_ord.unit == None):
+            data_form["unit"] = ""
+        else:  data_form["unit"] = device_ord.unit
+        data_form["id"] = device_ord.data_id
+        data_form["data"] = request.data['data']
+        data_form["name"] = device_ord.control_type
 
-            return JsonResponse(request.data, safe=False,  status=status.HTTP_201_CREATED)
-        return JsonResponse({}, safe=False,  status=status.HTTP_400_BAD_REQUEST)
+        Adafruit.accesses[Adafruit.feedNameToUsername[device_ord.feed_name]].sendDataToFeed(device_ord.feed_name,str(json.dumps(data_form)))
+
+        return JsonResponse(request.data, safe=False,  status=status.HTTP_201_CREATED)
 
 @api_view(['GET','POST'])
 def addDevice(request):
