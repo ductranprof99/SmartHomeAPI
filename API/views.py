@@ -144,6 +144,7 @@ def addHome(request):
         print(home)
         return  JsonResponse({'a':'a'}, safe=False,  status=status.HTTP_202_ACCEPTED)
 
+#TODO CHECK PERMISSION FIRST
 class ModifySchedule(SmartHomeAuthView):
     def post(self, request):
         """
@@ -168,3 +169,12 @@ class ModifySchedule(SmartHomeAuthView):
         sched_serialized = ScheduleInputSerializer(sched).data
 
         return  JsonResponse(sched_serialized, safe=False,  status=status.HTTP_202_ACCEPTED)
+        
+    def delete(self, request):
+        if request.data and "schedule_id" in request.data:
+            scheds = Schedule.objects.filter(_id=ObjectId(request.data['schedule_id']))
+            if not scheds:
+                return  JsonResponse(safe=False,  status=status.HTTP_400_BAD_REQUEST, data="Can't find the schedule")
+            sched = scheds.first()
+            sched.delete()
+        return  JsonResponse(safe=False,  status=status.HTTP_202_ACCEPTED, data="Deleted")
