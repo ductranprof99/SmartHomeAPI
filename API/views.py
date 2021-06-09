@@ -3,6 +3,7 @@ from django.views.decorators.csrf import requires_csrf_token
 from rest_framework import status
 import json
 from bson.json_util import ObjectId
+from ast import literal_eval
 
 from API.models import *
 from API.serializers import *
@@ -25,26 +26,26 @@ def allusers(request):
     # print(result)
     return JsonResponse(result, safe=False,  status=status.HTTP_202_ACCEPTED)
 
-class DeviceList(APIView):
+class SmartHomeAuthView(APIView):
     permission_classes = (IsAuthenticated,)
-    
     def responseUnauthed(self, id):
         res = {"message": "Unauthorized access to " + id}
         return JsonResponse(res, safe=False,  status=status.HTTP_401_UNAUTHORIZED)
 
-    def get(self, request, phonenumber:str):
+class DeviceList(SmartHomeAuthView):
+    
+    def get(self, request, phonenumber: str):
         if self.request.user.phone_number != phonenumber:
             return self.responseUnauthed(phonenumber)
         db['API_home'].find_one_and_update({'phone_number':phonenumber},{ "$set": {'is_online':True}})
         found_home = Home.objects.get(phone_number=phonenumber)
         home_data = HomeSerializer(found_home, many=False).data
         devices = Device.objects.filter(phone_number=phonenumber)
-        if request.method == 'GET':
-            res = {"home_id":home_data['phone_number'],'devices':[]}
-            device_ord = DeviceOnHomeSerializer(devices, many=True).data
-            for d in device_ord:
-                res['devices'] += [d]
-            return JsonResponse(res, safe=False,  status=status.HTTP_202_ACCEPTED)
+        res = {"home_id":home_data['phone_number'],'devices':[]}
+        device_ord = DeviceOnHomeSerializer(devices, many=True).data
+        for d in device_ord:
+            res['devices'] += [d]
+        return JsonResponse(res, safe=False,  status=status.HTTP_202_ACCEPTED)
 
     def post(self, request, phonenumber:str):
         if self.request.user.phone_number != phonenumber:
@@ -62,6 +63,34 @@ class DeviceList(APIView):
         Adafruit.accesses[Adafruit.feedNameToUsername[device_ord.feed_name]].sendDataToFeed(device_ord.feed_name,str(json.dumps(data_form)))
 
         return JsonResponse(request.data, safe=False,  status=status.HTTP_201_CREATED)
+    
+class DeviceInfo(SmartHomeAuthView):
+
+    def get(self, request, phonenumber:str, device_id:str):
+        device = None
+        try:
+            device = Device.objects.get(_id=ObjectId(device_id))
+        except:
+            response = {"message": "Device id not found"}
+            return JsonResponse(response, safe=False,  status=status.HTTP_400_BAD_REQUEST)
+
+        claimedPhoneNumber = self.request.user.phone_number
+        if claimedPhoneNumber != phonenumber or claimedPhoneNumber != device.phone_number:
+            return self.responseUnauthed(phonenumber)
+        schedules = Schedule.objects.filter(device_id=device_id)
+        schedules_serialized = ScheduleDisplaySerializer(schedules,many=True).data
+        device_serialized = DeviceDetailSerializer(device, many=False).data
+        response = {'device_id': device_id}
+        
+        response.update(device_serialized)
+        response['schedules'] = []
+        for sched in schedules_serialized:
+            a = {'schedule_id': sched['_id']}
+            a.update(dict(sched))
+            if a['is_repeat']: 
+                a['repeat_day'] = literal_eval(a['repeat_day'])
+            response['schedules'] += [a]
+        return JsonResponse(response, safe=False,  status=status.HTTP_202_ACCEPTED)
 
 @api_view(['GET','POST'])
 def addDevice(request):

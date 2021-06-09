@@ -28,7 +28,7 @@ class DeviceOnHomeSerializer(serializers.ModelSerializer):
         fields = ('device_id', 'device_name', 'device_type', 'description' , 'status','automation_mode')
 
 class DeviceDetailSerializer(serializers.ModelSerializer):
- 
+    device_id = CharField(source='_id')
     class Meta:
         model = Device
         fields = ('device_id','device_name', 'device_type', 'description' , 'status','automation_mode','schedules')
@@ -43,7 +43,7 @@ class ScheduleDisplaySerializer(serializers.ModelSerializer):
  
     class Meta:
         model = Schedule
-        fields = ('time_on', 'time_off' , 'is_repeat','repeat_day')
+        fields = ('_id', 'time_on', 'time_off' , 'is_repeat','repeat_day')
 
 class ScheduleInputSerializer(serializers.ModelSerializer):
  
