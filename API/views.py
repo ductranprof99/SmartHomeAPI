@@ -31,7 +31,23 @@ class SmartHomeAuthView(APIView):
     def responseUnauthed(self, id):
         res = {"message": "Unauthorized access to " + id}
         return JsonResponse(res, safe=False,  status=status.HTTP_401_UNAUTHORIZED)
+    
+class HomeInfo(SmartHomeAuthView):
+    def get(self, request):
+        phone_number = self.request.user.phone_number
+        home = None
+        try:
+            home = Home.objects.get(phone_number=phone_number)
+        except:
+            print("ERROR: Error querying home with username: " + phone_number)
+        if home:
+            home_serialized = HomeDetailSerializer(home, many=False).data
+            response = {}
+            for field in home_serialized:
+                response[field] = home_serialized[field]
 
+        return JsonResponse(response, safe=False,  status=status.HTTP_202_ACCEPTED)
+        
 class DeviceList(SmartHomeAuthView):
     
     def get(self, request, phonenumber: str):
