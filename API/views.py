@@ -50,7 +50,7 @@ class DeviceList(APIView):
         if self.request.user.phone_number != phonenumber:
             return self.responseUnauthed(phonenumber)
         db['API_home'].find_one_and_update({'phone_number':phonenumber},{ "$set": {'is_online':True}})
-        device_ord = Device.objects.get(device_id=request.data['device_id'])
+        device_ord = Device.objects.get(_id=ObjectId(request.data['device_id']))
         data_form = {"id":"","name":"","data":"","unit":""}
         if(device_ord.unit == None):
             data_form["unit"] = ""
@@ -72,7 +72,6 @@ def addDevice(request):
     if request.method == 'POST':
         device = Device()
         device._id = ObjectId()
-        device.device_id = str(device._id)
         device.phone_number = request.data['phone_number']
         device.description= request.data['description']
         device.device_name = request.data['device_name']
@@ -110,7 +109,6 @@ def addSchedule(request):
         sched = Schedule()
         sched._id = ObjectId()
         sched.schedule_id = str(sched._id)
-        sched.device_id= request.data['device_id']
         sched.is_repeat = request.data['is_repeat']
         sched.repeat_day = str(request.data['repeat_day'])
         sched.time_on = request.data['time_on']

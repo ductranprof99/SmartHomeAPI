@@ -13,6 +13,8 @@ mqttClients = {}
 feedNameToUsername = {}
 
 for account in all_ada_usernames:
+    if "CSE_BBC" in account['user_name']:
+        continue
     user_name = account['user_name']
     ada_key = account['ada_key']
     try:
