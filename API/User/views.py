@@ -10,6 +10,7 @@ from rest_framework.response import Response
 from SmartHomeAPI import settings
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import request
+from ..views import SmartHomeAuthView
 
 
 class UserRegisterView(APIView):
@@ -62,6 +63,19 @@ class UserLoginView(APIView):
             'error_messages': serializer.errors,
             'error_code': 400
         }, status=status.HTTP_400_BAD_REQUEST)
+
+class ChangePassword(SmartHomeAuthView):
+    def post(self, request):
+        if request.data and request.data["password"]:
+            username = self.request.user.phone_number
+            users = User.objects.filter(phone_number=username)
+            if users:
+                user = users.first()
+                user.password = make_password(request.data["password"])
+                user.save()
+                return Response(status=status.HTTP_200_OK, data="Password changed")
+            return Response(status=status.HTTP_400_BAD_REQUEST, data="Can't seem to find that user in the database")
+        return Response(status=status.HTTP_400_BAD_REQUEST, data="Possibly wrong data format")
 
 class TestAuth(APIView):
     permission_classes = (IsAuthenticated,)
