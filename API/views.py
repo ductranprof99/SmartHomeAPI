@@ -80,6 +80,7 @@ class DeviceList(SmartHomeAuthView):
 
         return JsonResponse(request.data, safe=False,  status=status.HTTP_201_CREATED)
     
+#TODO CHECK PERMISSION
 class DeviceInfo(SmartHomeAuthView):
 
     def get(self, request, phonenumber:str, device_id:str):
@@ -177,4 +178,17 @@ class ModifySchedule(SmartHomeAuthView):
                 return  JsonResponse(safe=False,  status=status.HTTP_400_BAD_REQUEST, data="Can't find the schedule")
             sched = scheds.first()
             sched.delete()
-        return  JsonResponse(safe=False,  status=status.HTTP_202_ACCEPTED, data="Deleted")
+            return  JsonResponse(safe=False,  status=status.HTTP_202_ACCEPTED, data="Deleted")
+        return  JsonResponse(safe=False,  status=status.HTTP_400_BAD_REQUEST, data="Wrong format!")
+        
+    def patch(self, request):
+        if request.data and "device_id" in request.data and "automation_mode" in request.data:
+            devices = Device.objects.filter(_id=ObjectId(request.data["device_id"]))
+            if devices:
+                device = devices.first()
+                device.automation_mode = request.data["automation_mode"]
+                device.save()
+                return  JsonResponse(safe=False,  status=status.HTTP_202_ACCEPTED, data="Updated")
+            return  JsonResponse(safe=False,  status=status.HTTP_400_BAD_REQUEST, data="Can't find the device!")
+        return  JsonResponse(safe=False,  status=status.HTTP_400_BAD_REQUEST, data="Wrong format!")
+        
