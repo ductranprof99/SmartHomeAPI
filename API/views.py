@@ -103,8 +103,7 @@ class DeviceInfo(SmartHomeAuthView):
         for sched in schedules_serialized:
             a = {'schedule_id': sched['_id']}
             a.update(dict(sched))
-            if a['is_repeat']: 
-                a['repeat_day'] = literal_eval(a['repeat_day'])
+            a['repeat_day'] = literal_eval(a['repeat_day'])
             response['schedules'] += [a]
         return JsonResponse(response, safe=False,  status=status.HTTP_202_ACCEPTED)
 
@@ -145,19 +144,27 @@ def addHome(request):
         print(home)
         return  JsonResponse({'a':'a'}, safe=False,  status=status.HTTP_202_ACCEPTED)
 
-@api_view(['GET','POST'])
-def addSchedule(request):
-    """
-    this thing for test add data
-    """
-    if request.method == 'POST':
-        sched = Schedule()
-        sched._id = ObjectId()
-        sched.schedule_id = str(sched._id)
+class ModifySchedule(SmartHomeAuthView):
+    def post(self, request):
+        """
+        this thing for test add data
+        """
+        data = request.data
+        if "schedule_id" in data:
+            scheds = Schedule.objects.filter(_id=ObjectId(data['schedule_id']))
+            if not scheds:
+                return  JsonResponse(safe=False,  status=status.HTTP_400_BAD_REQUEST, data="Can't find the schedule")
+            sched = scheds.first()
+        else:
+            sched = Schedule()
+            sched.device_id= request.data['device_id']
+            sched._id = ObjectId()
+
         sched.is_repeat = request.data['is_repeat']
         sched.repeat_day = str(request.data['repeat_day'])
         sched.time_on = request.data['time_on']
         sched.time_off = request.data['time_off']
         sched.save()
-        print(sched)
-        return  JsonResponse({'a':'a'}, safe=False,  status=status.HTTP_202_ACCEPTED)
+        sched_serialized = ScheduleInputSerializer(sched).data
+
+        return  JsonResponse(sched_serialized, safe=False,  status=status.HTTP_202_ACCEPTED)

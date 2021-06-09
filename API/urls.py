@@ -9,6 +9,6 @@ urlpatterns = [
     path('profile',views.HomeInfo.as_view()),
     path('adddevice',views.addDevice),
     path('addhome',views.addHome),
-    path('addsched',views.addSchedule),
+    path('addsched',views.ModifySchedule.as_view()),
     path('', include(userURLs))
 ]

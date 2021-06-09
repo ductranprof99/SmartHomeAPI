@@ -46,6 +46,7 @@ class ScheduleDisplaySerializer(serializers.ModelSerializer):
         fields = ('_id', 'time_on', 'time_off' , 'is_repeat','repeat_day')
 
 class ScheduleInputSerializer(serializers.ModelSerializer):
+    schedule_id = CharField(source='_id')
  
     class Meta:
         model = Schedule
