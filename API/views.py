@@ -80,7 +80,6 @@ class DeviceList(SmartHomeAuthView):
 
         return JsonResponse(request.data, safe=False,  status=status.HTTP_201_CREATED)
     
-#TODO CHECK PERMISSION
 class DeviceInfo(SmartHomeAuthView):
 
     def get(self, request, phonenumber:str, device_id:str):
@@ -88,8 +87,7 @@ class DeviceInfo(SmartHomeAuthView):
         try:
             device = Device.objects.get(_id=ObjectId(device_id))
         except:
-            response = {"message": "Device id not found"}
-            return JsonResponse(response, safe=False,  status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponse(safe=False,  status=status.HTTP_400_BAD_REQUEST, data="Device id not found")
 
         claimedPhoneNumber = self.request.user.phone_number
         if claimedPhoneNumber != phonenumber or claimedPhoneNumber != device.phone_number:
@@ -145,7 +143,6 @@ def addHome(request):
         print(home)
         return  JsonResponse({'a':'a'}, safe=False,  status=status.HTTP_202_ACCEPTED)
 
-#TODO CHECK PERMISSION FIRST
 class ModifySchedule(SmartHomeAuthView):
     def post(self, request):
         """
@@ -155,12 +152,22 @@ class ModifySchedule(SmartHomeAuthView):
         if "schedule_id" in data:
             scheds = Schedule.objects.filter(_id=ObjectId(data['schedule_id']))
             if not scheds:
-                return  JsonResponse(safe=False,  status=status.HTTP_400_BAD_REQUEST, data="Can't find the schedule")
+                return JsonResponse(safe=False,  status=status.HTTP_400_BAD_REQUEST, data="Can't find the schedule")
             sched = scheds.first()
-        else:
+            device_id = sched.device_id
+            device = Device.objects.get(_id=ObjectId(device_id))
+            if device.phone_number != self.request.user.phone_number:
+                return self.responseUnauthed(device.phone_number)
+        elif "device_id" in request.data:
+            device_id = request.data['device_id']
+            device = Device.objects.get(_id=ObjectId(device_id))
+            if device.phone_number != self.request.user.phone_number:
+                return self.responseUnauthed(device.phone_number)
             sched = Schedule()
             sched.device_id= request.data['device_id']
             sched._id = ObjectId()
+        else:
+            return JsonResponse(safe=False, status=status.HTTP_400_BAD_REQUEST, data="Possibly wrong data format")
 
         sched.is_repeat = request.data['is_repeat']
         sched.repeat_day = str(request.data['repeat_day'])
@@ -177,6 +184,8 @@ class ModifySchedule(SmartHomeAuthView):
             if not scheds:
                 return  JsonResponse(safe=False,  status=status.HTTP_400_BAD_REQUEST, data="Can't find the schedule")
             sched = scheds.first()
+            if sched.phone_number != self.request.user.phone_number:
+                return self.responseUnauthed(sched.phone_number)
             sched.delete()
             return  JsonResponse(safe=False,  status=status.HTTP_202_ACCEPTED, data="Deleted")
         return  JsonResponse(safe=False,  status=status.HTTP_400_BAD_REQUEST, data="Wrong format!")
@@ -186,6 +195,8 @@ class ModifySchedule(SmartHomeAuthView):
             devices = Device.objects.filter(_id=ObjectId(request.data["device_id"]))
             if devices:
                 device = devices.first()
+                if device.phone_number != self.request.user.phone_number:
+                    return self.responseUnauthed(device.phone_number)
                 device.automation_mode = request.data["automation_mode"]
                 device.save()
                 return  JsonResponse(safe=False,  status=status.HTTP_202_ACCEPTED, data="Updated")
