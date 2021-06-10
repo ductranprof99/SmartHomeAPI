@@ -5,6 +5,7 @@ from Adafruit_IO import MQTTClient
 import os
 
 mongo.update_keys()
+adafruit.analizer.anal_insertBigOne()
 
 list_account = db['ADA_accounts']
 all_ada_usernames = list(list_account.find({},{"_id":0, "key_index": 0 }))
