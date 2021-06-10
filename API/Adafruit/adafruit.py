@@ -100,7 +100,7 @@ def define_on_disconnected():
 
 def define_on_message(client: MQTTClient, accesses, feedNameToUsername):
     def on_message(client, topic_id, payload):
-        save = datetime.datetime.utcnow()
+        save = datetime.utcnow()
         # find device_id from database, it easier but need to implement later
         device = Device.objects.get(feed_name=topic_id)
         device_serialized = DeviceDetailSerializer(device).data
