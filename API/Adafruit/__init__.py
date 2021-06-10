@@ -2,7 +2,20 @@ from . import adafruit
 from .. import mongo
 from ..mongo import db
 from Adafruit_IO import MQTTClient
+from .schedule_exec import job
+import schedule
+import threading
+import time
 import os
+
+# RUN Routine schedule
+def RunScheduleExec():
+    schedule.every(10).seconds.do(job)
+    while True:
+        schedule.run_pending()
+        time.sleep(5)
+runScheduleExecThread = threading.Thread(target=RunScheduleExec, name="Schedule routine exec", daemon=True)
+runScheduleExecThread.start()
 
 mongo.update_keys()
 
