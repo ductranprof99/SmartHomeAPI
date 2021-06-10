@@ -112,9 +112,16 @@ def define_on_message(client: MQTTClient, accesses, feedNameToUsername):
             print(e)
             print("*** Possibly wrong published message format from adafruit!\n---Payload: " + payload)
             return
+        
+        # AUTOMATION Mode handling
         if device_serialized["device_type"] == "light_sensor":
             handleLightSensorThead = threading.Thread(target=handleLightSensorAutomation, args=(status[0], device_serialized["phone_number"], accesses, feedNameToUsername))
             handleLightSensorThead.start()
+        elif device_serialized["device_type"] == "temperature":
+            handleTempSensorThead = threading.Thread(target=handleTemperatureSensorAutomation, args=(status[0], device_serialized["phone_number"], accesses, feedNameToUsername))
+            handleTempSensorThead.start()
+
+        # SEND notification to frontend
         if this_home['is_online']:
             context = {'device_id': device_serialized["device_id"] ,'value': status[0]}
             channel_layer = get_channel_layer()
@@ -125,18 +132,36 @@ def define_on_message(client: MQTTClient, accesses, feedNameToUsername):
                     'message': context
                 }
             ) 
+        
+        # UPDATE database
         device.status = status[0]
         device.control_type = status[1]
         device.unit = status[2]
         device.data_id = status[3]
         device.save()
-        print(payload)
+
     return on_message    
 
 def handleLightSensorAutomation(sensor_data: str, phone_number: str, accesses: Dict[str, AdaConnect], feedNameToUsername: Dict[str, str]):
     mode = "1" if int(sensor_data) < 100 else "0"
     devices = Device.objects.filter(phone_number=phone_number, device_type="light", automation_mode=2)
     for device in devices:
+        data_form = {"id":"","name":"","data":"","unit":""}
+        if(device.unit == None):
+            data_form["unit"] = ""
+        else:  data_form["unit"] = device.unit
+        data_form["id"] = device.data_id
+        data_form["data"] = mode
+        data_form["name"] = device.control_type
+
+        accesses[feedNameToUsername[device.feed_name]].sendDataToFeed(device.feed_name,str(json.dumps(data_form)))
+
+def handleTemperatureSensorAutomation(sensor_data: str, phone_number: str, accesses: Dict[str, AdaConnect], feedNameToUsername: Dict[str, str]):
+    temp, humid = [int(data) for data in sensor_data.split("-")]
+    mode = "1" if temp > 30 else "0"
+    devices = Device.objects.filter(phone_number=phone_number, device_type="fan", automation_mode=2)
+    for device in devices:
+        # Update (turn on/off) device on adafruit
         data_form = {"id":"","name":"","data":"","unit":""}
         if(device.unit == None):
             data_form["unit"] = ""
