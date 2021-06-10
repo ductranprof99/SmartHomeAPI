@@ -1,9 +1,14 @@
+import json
+from typing import Dict
 from Adafruit_IO import Client,Feed,MQTTClient
 from datetime import datetime
 from .. import analizer
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from ..mongo import db
+from API.models import *
+from API.serializers import *
+import threading
 
 class AdaConnect():
     def __init__(self,username,key):
@@ -93,30 +98,51 @@ def define_on_disconnected():
         print('Disconnected from Adafruit IO!')
     return on_disconnected
 
-def define_on_message(client: MQTTClient):
+def define_on_message(client: MQTTClient, accesses, feedNameToUsername):
     def on_message(client, topic_id, payload):
-        # TODO REMOVE & FIX this ugly feed_name_array
         save = datetime.now().strftime("%d-%b-%Y (%H:%M:%S.%f)")
         # find device_id from database, it easier but need to implement later
-        device = db['API_device'].find_one({'feed_name':topic_id})
-        if device != None:
-            phone_number = device['phone_number'] 
-            this_home = db['API_home'].find_one({'phone_number':phone_number})
-            try:
-                status = analizer.anal_payload(topic_id,save,payload,device['device_id'])  # device_id add later
-            except:
-                print("*** Possibly wrong published message format from adafruit!\n---Payload: " + payload)
-                return
-            if this_home['is_online']:
-                context = {'device_id': device['device_id'] ,'value': status[0]}
-                channel_layer = get_channel_layer()
-                async_to_sync(channel_layer.group_send)(
-                    phone_number,
-                    {
-                        'type': 'send_message_to_frontend',
-                        'message': context
-                    }
-                ) 
-            db['API_device'].update_one({ "feed_name": topic_id },{ "$set": { "status": status[0] ,'control_type':status[1],'unit':status[2],'data_id':status[3]} })
+        device = Device.objects.get(feed_name=topic_id)
+        device_serialized = DeviceDetailSerializer(device).data
+        phone_number = device_serialized["phone_number"]
+        this_home = db['API_home'].find_one({'phone_number':phone_number})
+        try:
+            status = analizer.anal_payload(topic_id,save,payload,device_serialized["device_id"])  # device_id add later
+        except Exception as e:
+            print(e)
+            print("*** Possibly wrong published message format from adafruit!\n---Payload: " + payload)
+            return
+        if device_serialized["device_type"] == "light_sensor":
+            handleLightSensorThead = threading.Thread(target=handleLightSensorAutomation, args=(status[0], device_serialized["phone_number"], accesses, feedNameToUsername))
+            handleLightSensorThead.start()
+        if this_home['is_online']:
+            context = {'device_id': device_serialized["device_id"] ,'value': status[0]}
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                phone_number,
+                {
+                    'type': 'send_message_to_frontend',
+                    'message': context
+                }
+            ) 
+        device.status = status[0]
+        device.control_type = status[1]
+        device.unit = status[2]
+        device.data_id = status[3]
+        device.save()
         print(payload)
-    return on_message
+    return on_message    
+
+def handleLightSensorAutomation(sensor_data: str, phone_number: str, accesses: Dict[str, AdaConnect], feedNameToUsername: Dict[str, str]):
+    mode = "1" if int(sensor_data) < 100 else "0"
+    devices = Device.objects.filter(phone_number=phone_number, device_type="light", automation_mode=2)
+    for device in devices:
+        data_form = {"id":"","name":"","data":"","unit":""}
+        if(device.unit == None):
+            data_form["unit"] = ""
+        else:  data_form["unit"] = device.unit
+        data_form["id"] = device.data_id
+        data_form["data"] = mode
+        data_form["name"] = device.control_type
+
+        accesses[feedNameToUsername[device.feed_name]].sendDataToFeed(device.feed_name,str(json.dumps(data_form)))

@@ -30,7 +30,7 @@ def Listen():
         client = mqttClients[client_]
         client.on_connect    = adafruit.define_on_connected(client=client, accesses=accesses)
         client.on_disconnect = adafruit.define_on_disconnected()
-        client.on_message    = adafruit.define_on_message(client=client)
+        client.on_message    = adafruit.define_on_message(client=client, accesses=accesses, feedNameToUsername=feedNameToUsername)
         client.connect()
         mqttClients[client_].loop_background()
 

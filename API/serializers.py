@@ -31,7 +31,7 @@ class DeviceDetailSerializer(serializers.ModelSerializer):
     device_id = CharField(source='_id')
     class Meta:
         model = Device
-        fields = ('device_id','device_name', 'device_type', 'description' , 'status','automation_mode','schedules')
+        fields = ('device_id','device_name', 'device_type', 'description' , 'status','automation_mode','schedules', 'phone_number')
 
 
 class DeviceCommandSerializer(serializers.ModelSerializer):
