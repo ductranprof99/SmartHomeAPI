@@ -33,12 +33,14 @@ def job(adaAccesses: dict, feedNameToUser: dict):
         # print("time_off: " + str(time_off))
         # print(time_off == timenow)
         # print("Automode")
+        device = None
         try:
             device = Device.objects.get(_id=ObjectId(schedule.device_id))
         except Exception as e:
             print("Can't find the device with id " + schedule.device_id)
             print(e)
-        
+        if not device:
+            continue
         # print(device.automation_mode == 1)
         # print("-")
 
