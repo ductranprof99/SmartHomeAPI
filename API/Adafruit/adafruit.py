@@ -98,47 +98,50 @@ def define_on_disconnected():
         print('Disconnected from Adafruit IO!')
     return on_disconnected
 
+def handleOnMessage(topic_id, payload, accesses, feedNameToUsername):
+    save = datetime.now()
+    # find device_id from database, it easier but need to implement later
+    device = Device.objects.get(feed_name=topic_id)
+    device_serialized = DeviceDetailSerializer(device).data
+    phone_number = device_serialized["phone_number"]
+    this_home = db['API_home'].find_one({'phone_number':phone_number})
+    try:
+        status = analizer.anal_payload(topic_id,save,payload,device_serialized["device_id"])  # device_id add later
+    except Exception as e:
+        print(e)
+        print("*** Possibly wrong published message format from adafruit!\n---Payload: " + payload)
+        return
+    
+    # AUTOMATION Mode handling
+    if device_serialized["device_type"] == "light_sensor":
+        handleLightSensorThead = threading.Thread(name="HandleLightSensorThread", target=handleLightSensorAutomation, args=(status[0], device_serialized["phone_number"], accesses, feedNameToUsername))
+        handleLightSensorThead.start()
+    elif device_serialized["device_type"] == "temperature":
+        handleTempSensorThead = threading.Thread(name="HandleTempSensorThread", target=handleTemperatureSensorAutomation, args=(status[0], device_serialized["phone_number"], accesses, feedNameToUsername))
+        handleTempSensorThead.start()
+
+    # SEND notification to frontend
+    if this_home['is_online']:
+        context = {'device_id': device_serialized["device_id"] ,'value': status[0]}
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            phone_number,
+            {
+                'type': 'send_message_to_frontend',
+                'message': context
+            }
+        ) 
+    
+    # UPDATE database
+    device.status = status[0]
+    device.control_type = status[1]
+    device.unit = status[2]
+    device.data_id = status[3]
+    device.save()
+
 def define_on_message(client: MQTTClient, accesses, feedNameToUsername):
     def on_message(client, topic_id, payload):
-        save = datetime.utcnow()
-        # find device_id from database, it easier but need to implement later
-        device = Device.objects.get(feed_name=topic_id)
-        device_serialized = DeviceDetailSerializer(device).data
-        phone_number = device_serialized["phone_number"]
-        this_home = db['API_home'].find_one({'phone_number':phone_number})
-        try:
-            status = analizer.anal_payload(topic_id,save,payload,device_serialized["device_id"])  # device_id add later
-        except Exception as e:
-            print(e)
-            print("*** Possibly wrong published message format from adafruit!\n---Payload: " + payload)
-            return
-        
-        # AUTOMATION Mode handling
-        if device_serialized["device_type"] == "light_sensor":
-            handleLightSensorThead = threading.Thread(target=handleLightSensorAutomation, args=(status[0], device_serialized["phone_number"], accesses, feedNameToUsername))
-            handleLightSensorThead.start()
-        elif device_serialized["device_type"] == "temperature":
-            handleTempSensorThead = threading.Thread(target=handleTemperatureSensorAutomation, args=(status[0], device_serialized["phone_number"], accesses, feedNameToUsername))
-            handleTempSensorThead.start()
-
-        # SEND notification to frontend
-        if this_home['is_online']:
-            context = {'device_id': device_serialized["device_id"] ,'value': status[0]}
-            channel_layer = get_channel_layer()
-            async_to_sync(channel_layer.group_send)(
-                phone_number,
-                {
-                    'type': 'send_message_to_frontend',
-                    'message': context
-                }
-            ) 
-        
-        # UPDATE database
-        device.status = status[0]
-        device.control_type = status[1]
-        device.unit = status[2]
-        device.data_id = status[3]
-        device.save()
+        handleOnMessage(topic_id, payload, accesses, feedNameToUsername)
 
     return on_message    
 
