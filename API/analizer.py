@@ -34,32 +34,29 @@ def anal_value(value:str,device_type):
 class Statistic():
 
 
-    def calculate(self,phonenumber,week=None,month=None):
+    def calculate(self,phonenumber,week=None,month=None,type_dev=None):
         lt = datetime.now()
         if week != None:
             self.deltaday = 7*week
             d = timedelta(days = 7*week)
             gt = lt - d
-            return self.combine(phonenumber,gt,lt)
+            return self.combine(phonenumber,gt,lt,type_dev)
         else:
             self.deltaday = 30*month
             d = timedelta(days = 30*month)
             gt = lt - d
-            return self.combine(phonenumber,gt,lt)
+            return self.combine(phonenumber,gt,lt,type_dev)
 
-    def combine(self,phonenumber,gt,lt):
+    def combine(self,phonenumber,gt,lt,type_dev):
         self.devices = list(db['API_device'].find({'phone_number':phonenumber}))
-        self.list_light = [str(a_dict['_id']) for a_dict in self.devices if a_dict['device_type'] == 'light']
-        self.list_fan = [str(a_dict['_id']) for a_dict in self.devices if a_dict['device_type'] == 'fan']
-
-        self.lights_his = db['API_history'].find({"$and": [{"time": {'$gt': gt,'$lte':lt }},
-                                                           {'$in':self.list_light}]})
-        self.fans_his = db['API_history'].find({"$and": [{"time": {'$gt': gt,'$lte':lt }},
-                                                         {'$in':self.list_fan}]})
         res = {}
-        if(self.list_light != []):
+        if(self.list_light != [] and type_dev == 'light'):
+            self.list_light = [str(a_dict['_id']) for a_dict in self.devices if a_dict['device_type'] == 'light']
+            self.lights_his = db['API_history'].find({"$and": [{"time": {'$gt': gt,'$lte':lt }},{'$in':self.list_light}]})
             res.update({'light':self.anal_lightStatistic()})
-        if(self.list_fan != []):
+        if(self.list_fan != [] and type_dev == 'fan'):
+            self.list_fan = [str(a_dict['_id']) for a_dict in self.devices if a_dict['device_type'] == 'fan']
+            self.fans_his = db['API_history'].find({"$and": [{"time": {'$gt': gt,'$lte':lt }},{'$in':self.list_fan}]})
             res.update({'fan':self.anal_fanStatistic()})
         return res
 

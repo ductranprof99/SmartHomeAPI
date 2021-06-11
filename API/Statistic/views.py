@@ -8,13 +8,23 @@ from .. import analizer
 
 
 class StatisticManager(SmartHomeAuthView):
-    abstract = analizer.Statistic()
 
     def get(self):
+        ajaxpreload = analizer.Statistic()
+
         claimedPhoneNumber = self.request.user.phone_number
         try:
             Home.objects.get(phone_number=claimedPhoneNumber)
         except:
             return self.responseUnauthed(claimedPhoneNumber)
+        device_type = self.request.query_params.get('device-type')
+        range_date = self.request.query_params.get('range')
+        # change this later for custom range
+        if range_date == 'week':
+            response = ajaxpreload.calculate(claimedPhoneNumber,1,None,device_type)
+            return JsonResponse(response, safe=True,  status=status.HTTP_202_ACCEPTED)
+        elif range_date == 'month':
+            response = ajaxpreload.calculate(claimedPhoneNumber,None,1,device_type)
+            return JsonResponse(response, safe=True,  status=status.HTTP_202_ACCEPTED)
+        return JsonResponse({}, safe=False,  status=status.HTTP_404_NOT_FOUND)
 
-    
