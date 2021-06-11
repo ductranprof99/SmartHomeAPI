@@ -80,7 +80,7 @@ class Statistic():
         fan_dict = {'total': 0,'day_average':0,'data_points':{},'device_usage': []}
         for device in list_statistic:
             fan_dict['total']+= device['total']
-            fan_dict['device_usage'].append({device['device_name'],device['total']})
+            fan_dict['device_usage'].append({'device_name':device['device_name'],'total':device['total']})
             for i in device['data_points']:
                 if i.strftime("%d/%m/%Y") in fan_dict['data_points']:
                     fan_dict['data_points'][i.strftime("%d/%m/%Y")] += device['data_points'][i]
