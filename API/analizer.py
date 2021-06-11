@@ -30,28 +30,86 @@ def anal_value(value:str,device_type):
     else: return value
 
         
+
 class Statistic():
 
-    def anal_allDeviceStatistic(self):
+
+    def calculate(self,phonenumber,week=None,month=None):
+        lt = datetime.now()
+        if week != None:
+            self.deltaday = 7*week
+            d = timedelta(days = 7*week)
+            gt = lt - d
+            return self.combine(phonenumber,gt,lt)
+        else:
+            self.deltaday = 30*month
+            d = timedelta(days = 30*month)
+            gt = lt - d
+            return self.combine(phonenumber,gt,lt)
+
+    def combine(self,phonenumber,gt,lt):
+        self.devices = list(db['API_device'].find({'phone_number':phonenumber}))
+        self.list_light = [str(a_dict['_id']) for a_dict in self.devices if a_dict['device_type'] == 'light']
+        self.list_fan = [str(a_dict['_id']) for a_dict in self.devices if a_dict['device_type'] == 'fan']
+
+        self.lights_his = db['API_history'].find({"$and": [{"time": {'$gt': gt,'$lte':lt }},
+                                                           {'$in':self.list_light}]})
+        self.fans_his = db['API_history'].find({"$and": [{"time": {'$gt': gt,'$lte':lt }},
+                                                         {'$in':self.list_fan}]})
+        res = {}
+        if(self.list_light != []):
+            res.update({'light':self.anal_lightStatistic()})
+        if(self.list_fan != []):
+            res.update({'fan':self.anal_fanStatistic()})
+        return res
+
+    def anal_lightStatistic(self):
+        list_statistic = self.anal_DeviceSameType(self.list_light,self.lights_his)
+        light_dict = {'total': 0,'day_average':0,'data_points':{},'device_usage': []}
+        for device in list_statistic:
+            light_dict['total']+= device['total']
+            light_dict['device_usage'].append({device['device_name'],device['total']})
+            for i in device['data_points']:
+                if i in light_dict['data_points']:
+                    light_dict['data_points'][i] += device['data_points'][i]
+                else:  light_dict['data_points'][i] = device['data_points'][i]
+        light_dict['day_average'] = light_dict['total']/self.deltaday
+        return light_dict
+
+    def anal_fanStatistic(self):
+        list_statistic = self.anal_DeviceSameType(self.list_fan,self.fans_his)
+        fan_dict = {'total': 0,'day_average':0,'data_points':{},'device_usage': []}
+        for device in list_statistic:
+            fan_dict['total']+= device['total']
+            fan_dict['device_usage'].append({device['device_name'],device['total']})
+            for i in device['data_points']:
+                if i in fan_dict['data_points']:
+                    fan_dict['data_points'][i] += device['data_points'][i]
+                else:  fan_dict['data_points'][i] = device['data_points'][i]
+        fan_dict['day_average']+= fan_dict['total']/self.deltaday
+        return fan_dict
+
+
+    def anal_DeviceSameType(self,list_device,queryHistory):
         '''
         return list of device's statistic 
-        item data form : { device_id, device_type, device_name, phone_number, data_points}
+        item data form : { device_id, device_name, data_points,total}
         date format : %d/%m/%Y | type string
         '''
         list_device = list(db['API_device'].find({}))
         queryHistory = list(db['API_history'].find({}))
-        queryHistory.sort(key=lambda item:datetime.strptime(item['time'], "%d-%b-%Y (%H:%M:%S.%f)"), reverse=False)
-        # need to check type device before make statistic (only for light and fan)
+        queryHistory.sort(key=lambda item:item['time'], reverse=False)
         results = []
         for device in list_device:
             statistic = {}
-            if device['device_type'] == 'light' or device['device_type'] == 'fan':
-                statistic['device_id'] = str(device['_id'])
-                statistic['phone_number'] = device['phone_number']
-                statistic['device_name'] = device['device_name']
-                statistic['device_type'] = device['device_type']
-                statistic['data_points'] = self.anal_DeviceStatistic(queryHistory,str(device['_id']))
-                results.append(statistic)
+            statistic['device_id'] = str(device['_id'])
+            statistic['device_name'] = device['device_name']
+            statistic['data_points'] = self.anal_DeviceStatistic(queryHistory,str(device['_id']))
+            total = 0
+            for day in statistic['data_points'].items():
+                total += day[1]
+            statistic['total'] = total
+            results.append(statistic)
         return results
 
 
@@ -63,6 +121,7 @@ class Statistic():
         '''
         isOn = previousDay
         previous_time = None
+        end_day = datetime.combine(filterDay,time=time(23,59,59))
         if isOn:
             timePart = time(0,0,0)
             previous_time = datetime.combine(filterDay,timePart)
@@ -78,44 +137,28 @@ class Statistic():
                 if not isOn:
                     previous_time = eachStatus['time']
                     isOn = True
-        res = tuple([{filterDay.strftime("%d/%m/%Y"):(int(totalTime_1day.total_seconds()/36)/100)},isOn])
+        if(isOn):
+            deltatime = end_day - previous_time
+            totalTime_1day += deltatime
+        res = tuple([{filterDay:(int(totalTime_1day.total_seconds()/36)/100)},isOn])  #filterday is date object (only date)
         return res
 
 
     def anal_DeviceStatistic(self,queryHistory,device_id):
 
-        res = []
+        res = {}
         listDay_embedDatasInDay = {} # dictionary contain list =  {date: [{value,time}...]}
         for record in queryHistory:
             if record['device_id'] == device_id:
-                dateMark = datetime.strptime(record['time'], "%d-%b-%Y (%H:%M:%S.%f)").date()
+                dateMark = record['time'].date()
                 if  dateMark in listDay_embedDatasInDay:
-                    listDay_embedDatasInDay[dateMark].append({'value':record['value'],'time':datetime.strptime(record['time'], "%d-%b-%Y (%H:%M:%S.%f)")})
+                    listDay_embedDatasInDay[dateMark].append({'value':record['value'],'time':record['time']})
                 else:
-                    listDay_embedDatasInDay[dateMark] = [{'value':record['value'],'time':datetime.strptime(record['time'], "%d-%b-%Y (%H:%M:%S.%f)")}]
-            prevDay = False
+                    listDay_embedDatasInDay[dateMark] = [{'value':record['value'],'time':record['time']}]
+        prevDay = False
         for filteredRecord in listDay_embedDatasInDay:
             anal_inserted = self.anal_DayRecord(listDay_embedDatasInDay[filteredRecord],prevDay,filteredRecord)
-            res.append(anal_inserted[0])
+            res.update(anal_inserted[0])
             prevDay = anal_inserted[1]
         return res
 
-
-def anal_insertBigOne():
-    '''
-    update statistic everyday
-    '''
-    abc = Statistic()
-    newStatisTic = abc.anal_allDeviceStatistic();
-    for device in newStatisTic:
-        db['API_statistic'].update_one({'device_id':device['device_id']},{"$set": device},True)
-
-
-def anal_insertEveryDay():
-    '''
-    update statistic everyday
-    '''
-    abc = Statistic()
-    newStatisTic = abc.anal_allDeviceStatistic();
-    for device in newStatisTic:
-        db['API_statistic'].update_one({'device_id':device['device_id']},{"$set": {'data_points':device['data_points']}},True)

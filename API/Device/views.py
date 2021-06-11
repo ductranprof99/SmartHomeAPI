@@ -12,7 +12,7 @@ from rest_framework.decorators import api_view
 
 class DeviceList(SmartHomeAuthView):
     
-    def get(self, request, phonenumber: str):
+    def get(self, phonenumber: str):
         if self.request.user.phone_number != phonenumber:
             return self.responseUnauthed(phonenumber)
         db['API_home'].find_one_and_update({'phone_number':phonenumber},{ "$set": {'is_online':True}})
