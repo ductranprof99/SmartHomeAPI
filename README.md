@@ -1,7 +1,7 @@
 1. Clone this project
 2. Start a virtual machine of python
 ```shell
-python venv -m env
+python -m venv env
 ```
 3. install dependencies
 ```shell
