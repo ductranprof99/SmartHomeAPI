@@ -8,17 +8,8 @@ import threading
 import time
 import os
 
-# RUN Routine schedule
-def RunScheduleExec():
-    schedule.every(10).seconds.do(job)
-    while True:
-        schedule.run_pending()
-        time.sleep(5)
-runScheduleExecThread = threading.Thread(target=RunScheduleExec, name="Schedule routine exec", daemon=True)
-runScheduleExecThread.start()
-
 mongo.update_keys()
-adafruit.analizer.anal_insertBigOne()
+# adafruit.analizer.anal_insertBigOne()
 
 list_account = db['ADA_accounts']
 all_ada_usernames = list(list_account.find({},{"_id":0, "key_index": 0 }))
@@ -38,6 +29,15 @@ for account in all_ada_usernames:
         mqttClients[user_name] = MQTTClient(user_name, ada_key)
     except:
         print("Cannot connect to adafruitIO user: " + user_name)
+
+# RUN Routine schedule
+def RunScheduleExec():
+    schedule.every(10).seconds.do(job, accesses, feedNameToUsername)
+    while True:
+        schedule.run_pending()
+        time.sleep(10)
+runScheduleExecThread = threading.Thread(target=RunScheduleExec, name="Schedule routine exec", daemon=True)
+runScheduleExecThread.start()
 
 def Listen():
     for client_ in mqttClients:

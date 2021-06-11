@@ -99,7 +99,7 @@ def define_on_disconnected():
     return on_disconnected
 
 def handleOnMessage(topic_id, payload, accesses, feedNameToUsername):
-    save = datetime.now().strftime("%d-%b-%Y (%H:%M:%S.%f)")
+    save = datetime.now()
     # find device_id from database, it easier but need to implement later
     device = Device.objects.get(feed_name=topic_id)
     device_serialized = DeviceDetailSerializer(device).data
