@@ -76,7 +76,7 @@ class Home(models.Model):
 class History(models.Model):
     device_id = models.CharField(max_length=30,blank=False,null=False)
     device_type = models.CharField(max_length=10,blank=False,null=False)
-    time = models.CharField(max_length=30,blank=False,null=False)
+    time = models.DateTimeField(null=False)
     value = models.CharField(max_length=10,blank=False,null=False)
     unit = models.CharField(max_length=10,blank=False,null=False)
     objects = models.DjongoManager()
