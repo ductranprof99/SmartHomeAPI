@@ -1,14 +1,14 @@
+import json
 from django.http.response import JsonResponse
 from rest_framework import status
 from API.models import *
 from API.serializers import *
 from ..views import SmartHomeAuthView
-from bson.json_util import ObjectId
 from .. import analizer
 
 
 class StatisticManager(SmartHomeAuthView):
-
+    
     def get(self, request):
         ajaxpreload = analizer.Statistic()
 
@@ -21,10 +21,10 @@ class StatisticManager(SmartHomeAuthView):
         range_date = self.request.query_params.get('range')
         # change this later for custom range
         if range_date == 'week':
-            response = ajaxpreload.calculate(claimedPhoneNumber,1,None,device_type)
-            return JsonResponse(response, safe=True,  status=status.HTTP_202_ACCEPTED)
+            result = ajaxpreload.calculate(claimedPhoneNumber,1,None,device_type)
+            return JsonResponse(result, safe=False,  status=status.HTTP_202_ACCEPTED)
         elif range_date == 'month':
-            response = ajaxpreload.calculate(claimedPhoneNumber,None,1,device_type)
-            return JsonResponse(response, safe=True,  status=status.HTTP_202_ACCEPTED)
+            result = ajaxpreload.calculate(claimedPhoneNumber,None,1,device_type)
+            return JsonResponse(result, safe=False,  status=status.HTTP_202_ACCEPTED)
         return JsonResponse({}, safe=False,  status=status.HTTP_404_NOT_FOUND)
 

@@ -67,11 +67,11 @@ class Statistic():
         light_dict = {'total': 0,'day_average':0,'data_points':{},'device_usage': []}
         for device in list_statistic:
             light_dict['total']+= device['total']
-            light_dict['device_usage'].append({device['device_name'],device['total']})
+            light_dict['device_usage'].append({'device_name':device['device_name'],'total':device['total']})
             for i in device['data_points']:
-                if i in light_dict['data_points']:
-                    light_dict['data_points'][i] += device['data_points'][i]
-                else:  light_dict['data_points'][i] = device['data_points'][i]
+                if i.strftime("%d/%m/%Y") in light_dict['data_points']:
+                    light_dict['data_points'][i.strftime("%d/%m/%Y")] += device['data_points'][i]
+                else:  light_dict['data_points'][i.strftime("%d/%m/%Y")] = device['data_points'][i]
         light_dict['day_average'] = light_dict['total']/self.deltaday
         return light_dict
 
@@ -82,9 +82,9 @@ class Statistic():
             fan_dict['total']+= device['total']
             fan_dict['device_usage'].append({device['device_name'],device['total']})
             for i in device['data_points']:
-                if i in fan_dict['data_points']:
-                    fan_dict['data_points'][i] += device['data_points'][i]
-                else:  fan_dict['data_points'][i] = device['data_points'][i]
+                if i.strftime("%d/%m/%Y") in fan_dict['data_points']:
+                    fan_dict['data_points'][i.strftime("%d/%m/%Y")] += device['data_points'][i]
+                else:  fan_dict['data_points'][i.strftime("%d/%m/%Y")] = device['data_points'][i]
         fan_dict['day_average']+= fan_dict['total']/self.deltaday
         return fan_dict
 
