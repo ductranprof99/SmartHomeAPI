@@ -9,7 +9,7 @@ from .. import analizer
 
 class StatisticManager(SmartHomeAuthView):
 
-    def get(self):
+    def get(self, request):
         ajaxpreload = analizer.Statistic()
 
         claimedPhoneNumber = self.request.user.phone_number

@@ -60,12 +60,17 @@ def job(adaAccesses: dict, feedNameToUser: dict):
 
         if not schedule.is_repeat:
             if time_on == timenow:
+                if device.status == "1":
+                    continue
                 data_form["data"] = "1"
                 # print("Sending data to adafruit")
                 deviceAccess.sendDataToFeed(device.feed_name, str(json.dumps(data_form)))
                 continue
 
             elif time_off == timenow:
+                if device.status == "0":
+                    schedule.delete()
+                    continue
                 data_form["data"] = "0"
                 deviceAccess.sendDataToFeed(device.feed_name, str(json.dumps(data_form)))
                 schedule.delete()
@@ -74,12 +79,16 @@ def job(adaAccesses: dict, feedNameToUser: dict):
         else:
             repeat_days = literal_eval(schedule.repeat_day)
             if time_on == timenow:
+                if device.status == "1":
+                    continue
                 if PYTHON_DAY_TO_DB_DAY_MAP[datenow.weekday()] in repeat_days:
                     data_form["data"] = "1"
                     deviceAccess.sendDataToFeed(device.feed_name, str(json.dumps(data_form)))
                     continue
 
             elif time_off == timenow:
+                if device.status == "0":
+                    continue
                 if PYTHON_DAY_TO_DB_DAY_MAP[datenow.weekday()] in repeat_days:
                     data_form["data"] = "0"
                     deviceAccess.sendDataToFeed(device.feed_name, str(json.dumps(data_form)))

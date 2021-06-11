@@ -9,7 +9,6 @@ import time
 import os
 
 mongo.update_keys()
-# adafruit.analizer.anal_insertBigOne()
 
 list_account = db['ADA_accounts']
 all_ada_usernames = list(list_account.find({},{"_id":0, "key_index": 0 }))
@@ -32,10 +31,10 @@ for account in all_ada_usernames:
 
 # RUN Routine schedule
 def RunScheduleExec():
-    schedule.every(10).seconds.do(job, accesses, feedNameToUsername)
+    schedule.every(5).seconds.do(job, accesses, feedNameToUsername)
     while True:
         schedule.run_pending()
-        time.sleep(10)
+        time.sleep(5)
 runScheduleExecThread = threading.Thread(target=RunScheduleExec, name="Schedule routine exec", daemon=True)
 runScheduleExecThread.start()
 
