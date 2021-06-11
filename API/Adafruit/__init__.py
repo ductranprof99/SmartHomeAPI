@@ -36,7 +36,8 @@ def RunScheduleExec():
         schedule.run_pending()
         time.sleep(5)
 runScheduleExecThread = threading.Thread(target=RunScheduleExec, name="Schedule routine exec", daemon=True)
-runScheduleExecThread.start()
+if os.getenv("SCHEDULE_ROUTINE") == "True":
+    runScheduleExecThread.start()
 
 def Listen():
     for client_ in mqttClients:
