@@ -49,6 +49,8 @@ class Statistic():
 
     def combine(self,phonenumber,gt,lt,type_dev):
         self.devices = list(db['API_device'].find({'phone_number':phonenumber}))
+        self.list_light = [str(a_dict['_id']) for a_dict in self.devices if a_dict['device_type'] == 'light']
+        self.list_fan = [str(a_dict['_id']) for a_dict in self.devices if a_dict['device_type'] == 'fan']
         res = {}
         if(self.list_light != [] and type_dev == 'light'):
             self.list_light = [str(a_dict['_id']) for a_dict in self.devices if a_dict['device_type'] == 'light']
