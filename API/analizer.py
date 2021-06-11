@@ -49,21 +49,27 @@ class Statistic():
 
     def combine(self,phonenumber,gt,lt,type_dev):
         self.devices = list(db['API_device'].find({'phone_number':phonenumber}))
-        self.list_light = [str(a_dict['_id']) for a_dict in self.devices if a_dict['device_type'] == 'light']
-        self.list_fan = [str(a_dict['_id']) for a_dict in self.devices if a_dict['device_type'] == 'fan']
         res = {}
-        if(self.list_light != [] and type_dev == 'light'):
-            self.list_light = [str(a_dict['_id']) for a_dict in self.devices if a_dict['device_type'] == 'light']
-            self.lights_his = db['API_history'].find({"$and": [{"time": {'$gt': gt,'$lte':lt }},{'$in':self.list_light}]})
-            res.update({'light':self.anal_lightStatistic()})
-        if(self.list_fan != [] and type_dev == 'fan'):
-            self.list_fan = [str(a_dict['_id']) for a_dict in self.devices if a_dict['device_type'] == 'fan']
-            self.fans_his = db['API_history'].find({"$and": [{"time": {'$gt': gt,'$lte':lt }},{'$in':self.list_fan}]})
-            res.update({'fan':self.anal_fanStatistic()})
+        if(type_dev == 'light'):
+            list_light = [{'id':str(a_dict['_id']),'device_name':a_dict['device_name']} for a_dict in self.devices if a_dict['device_type'] == 'light']
+            list_type = [a_dict['id'] for a_dict in list_light]
+            lights_his = []
+            for deviceid in list_type:
+                a = list(db['API_history'].find({"$and": [{"time": {'$gt': gt,'$lte':lt }},{'device_id':deviceid}]}))
+                lights_his += a
+            res.update({'light':self.anal_lightStatistic(list_light,lights_his)})
+        elif(type_dev == 'fan'):
+            list_fan =  [{'id':str(a_dict['_id']),'device_name':a_dict['device_name']} for a_dict in self.devices if a_dict['device_type'] == 'fan']
+            list_type = [a_dict['id'] for a_dict in list_fan]
+            fans_his = []
+            for deviceid in list_type:
+                a = list(db['API_history'].find({"$and": [{"time": {'$gt': gt,'$lte':lt }},{'device_id':deviceid}]}))
+                fans_his += a
+            res.update({'fan':self.anal_fanStatistic(list_fan,fans_his)})
         return res
 
-    def anal_lightStatistic(self):
-        list_statistic = self.anal_DeviceSameType(self.list_light,self.lights_his)
+    def anal_lightStatistic(self,list_light,lights_his):
+        list_statistic = self.anal_DeviceSameType(list_light,lights_his)
         light_dict = {'total': 0,'day_average':0,'data_points':{},'device_usage': []}
         for device in list_statistic:
             light_dict['total']+= device['total']
@@ -75,8 +81,8 @@ class Statistic():
         light_dict['day_average'] = light_dict['total']/self.deltaday
         return light_dict
 
-    def anal_fanStatistic(self):
-        list_statistic = self.anal_DeviceSameType(self.list_fan,self.fans_his)
+    def anal_fanStatistic(self,list_fan,fans_his):
+        list_statistic = self.anal_DeviceSameType(list_fan,fans_his)
         fan_dict = {'total': 0,'day_average':0,'data_points':{},'device_usage': []}
         for device in list_statistic:
             fan_dict['total']+= device['total']
@@ -95,15 +101,12 @@ class Statistic():
         item data form : { device_id, device_name, data_points,total}
         date format : %d/%m/%Y | type string
         '''
-        list_device = list(db['API_device'].find({}))
-        queryHistory = list(db['API_history'].find({}))
-        queryHistory.sort(key=lambda item:item['time'], reverse=False)
         results = []
         for device in list_device:
             statistic = {}
-            statistic['device_id'] = str(device['_id'])
+            statistic['device_id'] = device['id']
             statistic['device_name'] = device['device_name']
-            statistic['data_points'] = self.anal_DeviceStatistic(queryHistory,str(device['_id']))
+            statistic['data_points'] = self.anal_DeviceStatistic(queryHistory,device['id'])
             total = 0
             for day in statistic['data_points'].items():
                 total += day[1]
@@ -147,7 +150,7 @@ class Statistic():
 
         res = {}
         listDay_embedDatasInDay = {} # dictionary contain list =  {date: [{value,time}...]}
-        for record in queryHistory:
+        for record in list(queryHistory):
             if record['device_id'] == device_id:
                 dateMark = record['time'].date()
                 if  dateMark in listDay_embedDatasInDay:
