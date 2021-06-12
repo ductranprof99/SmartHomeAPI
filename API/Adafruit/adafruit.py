@@ -141,7 +141,8 @@ def handleOnMessage(topic_id, payload, accesses, feedNameToUsername):
 
 def define_on_message(client: MQTTClient, accesses, feedNameToUsername):
     def on_message(client, topic_id, payload):
-        handleOnMessage(topic_id, payload, accesses, feedNameToUsername)
+        handleOnMessageThread = threading.Thread(target=handleOnMessage, args=(topic_id, payload, accesses, feedNameToUsername))
+        handleOnMessageThread.start()
 
     return on_message    
 
