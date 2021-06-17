@@ -19,7 +19,8 @@ def getTime(stringTime: str):
     return time(hour, minute)
 
 def job(adaAccesses: dict, feedNameToUser: dict):
-    datenow = datetime.now().replace(second=0, microsecond=0)
+    datenow = datetime.utcnow().replace(second=0, microsecond=0)
+    datenow = datenow.replace(hour=datenow.hour + 7)
     timenow = datenow.time()
     # print("------------")
     # print("time now: " + str(timenow) + " | " + str(datenow.weekday()))
