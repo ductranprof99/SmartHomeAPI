@@ -42,7 +42,8 @@ class HomeInfo(SmartHomeAuthView):
             for field in home_serialized:
                 response[field] = home_serialized[field]
 
-        return JsonResponse(response, safe=False,  status=status.HTTP_202_ACCEPTED)
+            return JsonResponse(response, safe=False,  status=status.HTTP_202_ACCEPTED)
+        return JsonResponse(safe=False,  status=status.HTTP_400_BAD_REQUEST, data="Can't find the corresponding home for this user")
         
 @api_view(['GET','POST'])
 def addHome(request):
