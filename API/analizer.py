@@ -47,6 +47,23 @@ class Statistic():
             gt = lt - d
             return self.combine(phonenumber,gt,lt,type_dev)
 
+
+
+    def anal_total(self,device_id):
+        '''
+            return mean of hours usage of 1 device all the time
+        '''
+        all_dev_his = list(db['API_history'].find({'device_id':device_id}))
+        first_day = all_dev_his[0]['time'].date()
+        last_day = all_dev_his[-1]['time'].date()
+        activeDay = first_day - last_day
+        lucian = self.anal_DeviceSameType([{'id':device_id,'device_name':None}],all_dev_his)
+        if activeDay.days != 0:
+            return lucian[0]['total']/activeDay.days
+        else: return lucian[0]['total']
+        
+        
+
     def combine(self,phonenumber,gt,lt,type_dev):
         self.devices = list(db['API_device'].find({'phone_number':phonenumber}))
         res = {}
@@ -73,7 +90,11 @@ class Statistic():
         light_dict = {'total': 0,'day_average':0,'data_points':{},'device_usage': []}
         for device in list_statistic:
             light_dict['total']+= device['total']
-            light_dict['device_usage'].append({'device_name':device['device_name'],'total':device['total']})
+            isOver = None
+            if(device['mean'] > self.anal_total(device['device_id'])):
+                isOver = True
+            else: isOver = False
+            light_dict['device_usage'].append({'device_name':device['device_name'],'total':device['total'],'isOverUsed':isOver})
             for i in device['data_points']:
                 if i.strftime("%d/%m/%Y") in light_dict['data_points']:
                     light_dict['data_points'][i.strftime("%d/%m/%Y")] += device['data_points'][i]
@@ -86,7 +107,11 @@ class Statistic():
         fan_dict = {'total': 0,'day_average':0,'data_points':{},'device_usage': []}
         for device in list_statistic:
             fan_dict['total']+= device['total']
-            fan_dict['device_usage'].append({'device_name':device['device_name'],'total':device['total']})
+            isOver = None
+            if(device['mean'] > self.anal_total(device['device_id'])):
+                isOver = True
+            else: isOver = False
+            fan_dict['device_usage'].append({'device_name':device['device_name'],'total':device['total'],'isOverUsed':isOver})
             for i in device['data_points']:
                 if i.strftime("%d/%m/%Y") in fan_dict['data_points']:
                     fan_dict['data_points'][i.strftime("%d/%m/%Y")] += device['data_points'][i]
@@ -111,9 +136,27 @@ class Statistic():
             for day in statistic['data_points'].items():
                 total += day[1]
             statistic['total'] = total
+            statistic['mean'] = total/self.deltaday
             results.append(statistic)
         return results
 
+    def anal_DeviceStatistic(self,queryHistory,device_id):
+
+        res = {}
+        listDay_embedDatasInDay = {} # dictionary contain list =  {date: [{value,time}...]}
+        for record in list(queryHistory):
+            if record['device_id'] == device_id:
+                dateMark = record['time'].date()
+                if  dateMark in listDay_embedDatasInDay:
+                    listDay_embedDatasInDay[dateMark].append({'value':record['value'],'time':record['time']})
+                else:
+                    listDay_embedDatasInDay[dateMark] = [{'value':record['value'],'time':record['time']}]
+        prevDay = False
+        for filteredRecord in listDay_embedDatasInDay:
+            anal_inserted = self.anal_DayRecord(listDay_embedDatasInDay[filteredRecord],prevDay,filteredRecord)
+            res.update(anal_inserted[0])
+            prevDay = anal_inserted[1]
+        return res
 
 
 
@@ -146,21 +189,19 @@ class Statistic():
         return res
 
 
-    def anal_DeviceStatistic(self,queryHistory,device_id):
 
-        res = {}
-        listDay_embedDatasInDay = {} # dictionary contain list =  {date: [{value,time}...]}
-        for record in list(queryHistory):
-            if record['device_id'] == device_id:
-                dateMark = record['time'].date()
-                if  dateMark in listDay_embedDatasInDay:
-                    listDay_embedDatasInDay[dateMark].append({'value':record['value'],'time':record['time']})
-                else:
-                    listDay_embedDatasInDay[dateMark] = [{'value':record['value'],'time':record['time']}]
-        prevDay = False
-        for filteredRecord in listDay_embedDatasInDay:
-            anal_inserted = self.anal_DayRecord(listDay_embedDatasInDay[filteredRecord],prevDay,filteredRecord)
-            res.update(anal_inserted[0])
-            prevDay = anal_inserted[1]
-        return res
-
+    def anal_overuse(self,list_light,lights_his,list_fan,fans_his):
+        '''
+            Return an tuple
+            Fisrt element is light
+            Second is fan
+        '''
+        light=self.anal_lightStatistic(list_light, lights_his)
+        fan=self.anal_fanStatistic(list_fan, fans_his)
+        for i in range(0, len(light['device_usage'])):
+            if light['device_usage'][i]['total'] >light['total']/len(light['device_usage']):
+                light['device_usage'][i]['isOverUsed']=True
+        for i in range(0, len(fan['device_usage'])):
+            if fan['device_usage'][i]['total'] >fan['total']/len(fan['device_usage']):
+                fan['device_usage'][i]['isOverUsed']=True
+        return light, fan
