@@ -57,7 +57,7 @@ class Statistic():
         all_dev_his = list(db['API_history'].find({'device_id':device_id}))
         first_day = all_dev_his[0]['time'].date()
         activeDay =  datetime.now().date() - first_day
-        lucian = self.anal_DeviceSameType([{'id':device_id,'device_name':None}],all_dev_his)
+        lucian = self.anal_DeviceSameTypeFanLight([{'id':device_id,'device_name':None}],all_dev_his)
         if activeDay.days != 0:
             return lucian[0]['total']/activeDay.days
         else: return lucian[0]['total']
@@ -84,10 +84,18 @@ class Statistic():
                 a = list(db['API_history'].find({"$and": [{"time": {'$gt': gt,'$lte':lt }},{'device_id':deviceid}]}))
                 fans_his += a
             res.update({'fan':self.anal_fanStatistic(list_fan,fans_his)})
+        elif(type_dev == 'temperature'):
+            list_temperature =  [{'id':str(a_dict['_id']),'device_name':a_dict['device_name']} for a_dict in self.devices if a_dict['device_type'] == 'temperature']
+            list_type = [a_dict['id'] for a_dict in list_temperature]
+            fans_his = []
+            for deviceid in list_type:
+                a = list(db['API_history'].find({"$and": [{"time": {'$gt': gt,'$lte':lt }},{'device_id':deviceid}]}))
+                fans_his += a
+            res.update({'temperature':self.anal_tempStatistic(list_temperature,fans_his)})
         return res
 
     def anal_lightStatistic(self,list_light,lights_his):
-        list_statistic = self.anal_DeviceSameType(list_light,lights_his)
+        list_statistic = self.anal_DeviceSameTypeFanLight(list_light,lights_his)
         light_dict = {'total': 0,'day_average':0,'data_points':{},'device_usage': []}
         for device in list_statistic:
             light_dict['total']+= device['total']
@@ -104,7 +112,7 @@ class Statistic():
         return light_dict
 
     def anal_fanStatistic(self,list_fan,fans_his):
-        list_statistic = self.anal_DeviceSameType(list_fan,fans_his)
+        list_statistic = self.anal_DeviceSameTypeFanLight(list_fan,fans_his)
         fan_dict = {'total': 0,'day_average':0,'data_points':{},'device_usage': []}
         for device in list_statistic:
             fan_dict['total']+= device['total']
@@ -120,10 +128,26 @@ class Statistic():
         fan_dict['day_average']+= fan_dict['total']/self.deltaday
         return fan_dict
 
-
-    def anal_DeviceSameType(self,list_device,queryHistory):
+    def anal_tempStatistic(self,list_device,queryHistory):
         '''
-        return list of device's statistic 
+        return list of temperature and humid sensor type device's statistic 
+        item data form : { device_id, device_name, data_points}
+        date format : %d/%m/%Y | type string
+        '''
+        results = []
+        for device in list_device:
+            statistic = {}
+            statistic['data_points'] = self.anal_DeviceStatistic(queryHistory,device['id'])
+            statistic['device_usage'] = {"device_name": device['device_name']}
+            results.append(statistic)
+        return results
+        
+    
+
+
+    def anal_DeviceSameTypeFanLight(self,list_device,queryHistory):
+        '''
+        return list of light or fan type device's statistic 
         item data form : { device_id, device_name, data_points,total}
         date format : %d/%m/%Y | type string
         '''
@@ -141,9 +165,14 @@ class Statistic():
             results.append(statistic)
         return results
 
+
+
+
     def anal_DeviceStatistic(self,queryHistory,device_id):
         '''
         for each device in the time range
+        if fan or light:  {date: value,.....} 
+        if temperature: {date: {max,min,meantemp,humid}...} 
         '''
         res = {}
         listDay_embedDatasInDay = {} # dictionary contain list =  {date: [{value,time}...]}
@@ -160,28 +189,36 @@ class Statistic():
                 anal_inserted = self.anal_DayRecord_Fan_Light(listDay_embedDatasInDay[filteredRecord],prevDay,filteredRecord)
                 res.update(anal_inserted[0])
                 prevDay = anal_inserted[1]
-        self.LastDayRecord = res[date_list[0]]
+            self.LastDayRecord = res[date_list[0]]
+        elif self.type_dev == 'temperature':
+            for filteredRecord in listDay_embedDatasInDay:
+                anal_inserted = self.anal_DayRecordForTemp(listDay_embedDatasInDay[filteredRecord],filteredRecord)
+                if anal_inserted!= None: res.update(anal_inserted)
         return res
 
     def anal_DayRecordForTemp(self,listData,filterDay):
         '''
         listData format : [{'value','time':dateobject},.....]
         '''
-        previous_time = None
-        totalTime_1day = timedelta(hours=int(0), minutes=int(0), seconds=float(0))
-        for eachStatus in listData:
-            if eachStatus['value'] == '0':
-                if isOn:
-                    deltatime = eachStatus['time'] - previous_time
-                    totalTime_1day += deltatime
-                    # print(eachStatus['time'])
-                    isOn = False    
-            else:
-                if not isOn:
-                    previous_time = eachStatus['time']
-                    isOn = True
-        res = tuple([{filterDay:(int(totalTime_1day.total_seconds()/36)/100)},isOn])  #filterday is date object (only date)
-        return res
+        minTemp = 100
+        maxTemp = 0
+        humid = 0
+        count = 0
+        if listData != []:
+            for eachStatus in listData:
+                gongcha = anal_value(eachStatus['value'],'temperature')
+                cur_temp = int(gongcha[0])
+                if(cur_temp > maxTemp): 
+                    maxTemp = cur_temp - 0
+                if(cur_temp < minTemp): 
+                    minTemp = cur_temp - 0
+                humid += int(gongcha[1])
+                count+=1
+            meanTemp = (minTemp + maxTemp)/2
+            meanHumid = humid/count
+            return {filterDay.strftime("%d/%m/%Y"):{'max-tempe': maxTemp,'min-tempe':minTemp,'mean-tempe':meanTemp,'humid':meanHumid}}
+        else: return None
+
 
     def anal_DayRecord_Fan_Light(self,listData,previousDay,filterDay):
         '''
