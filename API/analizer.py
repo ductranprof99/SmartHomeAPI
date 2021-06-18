@@ -38,7 +38,7 @@ class Statistic():
         self.lt = datetime.now()
         self.today = self.lt.date()
         if week != None:
-            self.deltaday = 2*week
+            self.deltaday = 7*week
             d = timedelta(days = 7*week)
             self.gt = self.lt - d
             return self.combine(phonenumber,self.gt,self.lt,type_dev)
@@ -93,7 +93,7 @@ class Statistic():
         for device in list_statistic:
             light_dict['total']+= device['total']
             isOver = None
-            if(device['mean'] > self.anal_total(device['device_id'])):
+            if(self.LastDayRecord > self.anal_total(device['device_id'])):
                 isOver = True
             else: isOver = False
             light_dict['device_usage'].append({'device_name':device['device_name'],'total':device['total'],'isOverUsed':isOver})
@@ -161,38 +161,33 @@ class Statistic():
                 anal_inserted = self.anal_DayRecord_Fan_Light(listDay_embedDatasInDay[filteredRecord],prevDay,filteredRecord)
                 res.update(anal_inserted[0])
                 prevDay = anal_inserted[1]
+        self.LastDayRecord = res[date_list[0]]
         return res
 
-    # def anal_DayRecordForTemp(self,listData,filterDay):
-    #     '''
-    #     listData format : [{'value','time':dateobject},.....]
-    #     '''
-    #     previous_time = None
-    #     end_day = datetime.combine(filterDay,time=time(23,59,59))
-    #     if isOn:
-    #         timePart = time(0,0,0)
-    #         previous_time = datetime.combine(filterDay,timePart)
-    #     totalTime_1day = timedelta(hours=int(0), minutes=int(0), seconds=float(0))
-    #     for eachStatus in listData:
-    #         if eachStatus['value'] == '0':
-    #             if isOn:
-    #                 deltatime = eachStatus['time'] - previous_time
-    #                 totalTime_1day += deltatime
-    #                 # print(eachStatus['time'])
-    #                 isOn = False    
-    #         else:
-    #             if not isOn:
-    #                 previous_time = eachStatus['time']
-    #                 isOn = True
-    #     if(isOn):
-    #         deltatime = end_day - previous_time
-    #         totalTime_1day += deltatime
-    #     res = tuple([{filterDay:(int(totalTime_1day.total_seconds()/36)/100)},isOn])  #filterday is date object (only date)
-    #     return res
+    def anal_DayRecordForTemp(self,listData,filterDay):
+        '''
+        listData format : [{'value','time':dateobject},.....]
+        '''
+        previous_time = None
+        totalTime_1day = timedelta(hours=int(0), minutes=int(0), seconds=float(0))
+        for eachStatus in listData:
+            if eachStatus['value'] == '0':
+                if isOn:
+                    deltatime = eachStatus['time'] - previous_time
+                    totalTime_1day += deltatime
+                    # print(eachStatus['time'])
+                    isOn = False    
+            else:
+                if not isOn:
+                    previous_time = eachStatus['time']
+                    isOn = True
+        res = tuple([{filterDay:(int(totalTime_1day.total_seconds()/36)/100)},isOn])  #filterday is date object (only date)
+        return res
 
     def anal_DayRecord_Fan_Light(self,listData,previousDay,filterDay):
         '''
         listData format : [{'value','time':dateobject},.....]
+        return [{day : totalTime}, ngay truoc co on k]
         '''
         
         isOn = previousDay
