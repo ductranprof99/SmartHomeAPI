@@ -14,8 +14,7 @@ class StatisticManager(SmartHomeAuthView):
 
         claimedPhoneNumber = self.request.user.phone_number
         try:
-            # Home.objects.get(phone_number=claimedPhoneNumber)
-            a = 1
+            Home.objects.get(phone_number=claimedPhoneNumber)
         except:
             return self.responseUnauthed(claimedPhoneNumber)
         device_type = self.request.query_params.get('device-type')
