@@ -35,17 +35,18 @@ class Statistic():
 
 
     def calculate(self,phonenumber,week=None,month=None,type_dev=None):
-        lt = datetime.now()
+        self.lt = datetime.now()
+        self.today = self.lt.date()
         if week != None:
-            self.deltaday = 7*week
+            self.deltaday = 2*week
             d = timedelta(days = 7*week)
-            gt = lt - d
-            return self.combine(phonenumber,gt,lt,type_dev)
+            self.gt = self.lt - d
+            return self.combine(phonenumber,self.gt,self.lt,type_dev)
         else:
             self.deltaday = 30*month
             d = timedelta(days = 30*month)
-            gt = lt - d
-            return self.combine(phonenumber,gt,lt,type_dev)
+            self.gt = self.lt - d
+            return self.combine(phonenumber,self.gt,self.lt,type_dev)
 
 
 
@@ -65,6 +66,7 @@ class Statistic():
         
 
     def combine(self,phonenumber,gt,lt,type_dev):
+        self.type_dev = type_dev
         self.devices = list(db['API_device'].find({'phone_number':phonenumber}))
         res = {}
         if(type_dev == 'light'):
@@ -141,29 +143,58 @@ class Statistic():
         return results
 
     def anal_DeviceStatistic(self,queryHistory,device_id):
-
+        '''
+        for each device in the time range
+        '''
         res = {}
         listDay_embedDatasInDay = {} # dictionary contain list =  {date: [{value,time}...]}
+        date_list = [self.lt.date() - timedelta(days=x) for x in range(self.deltaday)]
+        for i in date_list:
+            listDay_embedDatasInDay.update({i:[]})
         for record in list(queryHistory):
             if record['device_id'] == device_id:
-                dateMark = record['time'].date()
-                if  dateMark in listDay_embedDatasInDay:
-                    listDay_embedDatasInDay[dateMark].append({'value':record['value'],'time':record['time']})
-                else:
-                    listDay_embedDatasInDay[dateMark] = [{'value':record['value'],'time':record['time']}]
-        prevDay = False
-        for filteredRecord in listDay_embedDatasInDay:
-            anal_inserted = self.anal_DayRecord(listDay_embedDatasInDay[filteredRecord],prevDay,filteredRecord)
-            res.update(anal_inserted[0])
-            prevDay = anal_inserted[1]
+                if record['time'].date() in date_list:
+                    listDay_embedDatasInDay[record['time'].date()].append({'value':record['value'],'time':record['time']})
+        if self.type_dev == 'light' or self.type_dev == 'fan':
+            prevDay = False
+            for filteredRecord in listDay_embedDatasInDay:
+                anal_inserted = self.anal_DayRecord_Fan_Light(listDay_embedDatasInDay[filteredRecord],prevDay,filteredRecord)
+                res.update(anal_inserted[0])
+                prevDay = anal_inserted[1]
         return res
 
+    # def anal_DayRecordForTemp(self,listData,filterDay):
+    #     '''
+    #     listData format : [{'value','time':dateobject},.....]
+    #     '''
+    #     previous_time = None
+    #     end_day = datetime.combine(filterDay,time=time(23,59,59))
+    #     if isOn:
+    #         timePart = time(0,0,0)
+    #         previous_time = datetime.combine(filterDay,timePart)
+    #     totalTime_1day = timedelta(hours=int(0), minutes=int(0), seconds=float(0))
+    #     for eachStatus in listData:
+    #         if eachStatus['value'] == '0':
+    #             if isOn:
+    #                 deltatime = eachStatus['time'] - previous_time
+    #                 totalTime_1day += deltatime
+    #                 # print(eachStatus['time'])
+    #                 isOn = False    
+    #         else:
+    #             if not isOn:
+    #                 previous_time = eachStatus['time']
+    #                 isOn = True
+    #     if(isOn):
+    #         deltatime = end_day - previous_time
+    #         totalTime_1day += deltatime
+    #     res = tuple([{filterDay:(int(totalTime_1day.total_seconds()/36)/100)},isOn])  #filterday is date object (only date)
+    #     return res
 
-
-    def anal_DayRecord(self,listData,previousDay,filterDay):
+    def anal_DayRecord_Fan_Light(self,listData,previousDay,filterDay):
         '''
         listData format : [{'value','time':dateobject},.....]
         '''
+        
         isOn = previousDay
         previous_time = None
         end_day = datetime.combine(filterDay,time=time(23,59,59))
@@ -177,31 +208,19 @@ class Statistic():
                     deltatime = eachStatus['time'] - previous_time
                     totalTime_1day += deltatime
                     # print(eachStatus['time'])
-                    isOn = False    
+                isOn = False    
             else:
                 if not isOn:
                     previous_time = eachStatus['time']
-                    isOn = True
-        if(isOn):
+                isOn = True
+        if(filterDay < datetime.now().date() and isOn):
             deltatime = end_day - previous_time
             totalTime_1day += deltatime
-        res = tuple([{filterDay:(int(totalTime_1day.total_seconds()/36)/100)},isOn])  #filterday is date object (only date)
-        return res
+        elif (isOn):
+            ala = datetime.now() - previous_time  
+            totalTime_1day += ala
+        
+        return tuple([{filterDay:(int(totalTime_1day.total_seconds()/36)/100)},isOn])  #filterday is date object (only date)
 
 
 
-    def anal_overuse(self,list_light,lights_his,list_fan,fans_his):
-        '''
-            Return an tuple
-            Fisrt element is light
-            Second is fan
-        '''
-        light=self.anal_lightStatistic(list_light, lights_his)
-        fan=self.anal_fanStatistic(list_fan, fans_his)
-        for i in range(0, len(light['device_usage'])):
-            if light['device_usage'][i]['total'] >light['total']/len(light['device_usage']):
-                light['device_usage'][i]['isOverUsed']=True
-        for i in range(0, len(fan['device_usage'])):
-            if fan['device_usage'][i]['total'] >fan['total']/len(fan['device_usage']):
-                fan['device_usage'][i]['isOverUsed']=True
-        return light, fan
