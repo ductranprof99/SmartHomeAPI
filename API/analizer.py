@@ -56,8 +56,7 @@ class Statistic():
         '''
         all_dev_his = list(db['API_history'].find({'device_id':device_id}))
         first_day = all_dev_his[0]['time'].date()
-        last_day = all_dev_his[-1]['time'].date()
-        activeDay = first_day - last_day
+        activeDay =  datetime.now().date() - first_day
         lucian = self.anal_DeviceSameType([{'id':device_id,'device_name':None}],all_dev_his)
         if activeDay.days != 0:
             return lucian[0]['total']/activeDay.days
