@@ -66,11 +66,13 @@ class UserLoginView(APIView):
 
 class ChangePassword(SmartHomeAuthView):
     def post(self, request):
-        if request.data and request.data["password"]:
+        if request.data and request.data["password"] and request.data["old_password"]:
             username = self.request.user.phone_number
             users = User.objects.filter(phone_number=username)
             if users:
                 user = users.first()
+                if not user.check_password(request.data["old_password"]):
+                    return Response(status=status.HTTP_400_BAD_REQUEST, data="Wrong password")
                 user.password = make_password(request.data["password"])
                 user.save()
                 return Response(status=status.HTTP_200_OK, data="Password changed")
