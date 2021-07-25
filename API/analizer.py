@@ -33,7 +33,6 @@ def anal_value(value:str,device_type):
 
 class Statistic():
 
-
     def calculate(self,phonenumber,week=None,month=None,type_dev=None):
         self.lt = datetime.now()
         self.today = self.lt.date()
@@ -48,21 +47,6 @@ class Statistic():
             self.gt = self.lt - d
             return self.combine(phonenumber,self.gt,self.lt,type_dev)
 
-
-
-    def anal_total(self,device_id):
-        '''
-            return mean of hours usage of 1 device all the time
-        '''
-        all_dev_his = list(db['API_history'].find({'device_id':device_id}))
-        first_day = all_dev_his[0]['time'].date()
-        activeDay =  datetime.now().date() - first_day
-        lucian = self.anal_DeviceSameTypeFanLight([{'id':device_id,'device_name':None}],all_dev_his)
-        if activeDay.days != 0:
-            return lucian[0]['total']/activeDay.days
-        else: return lucian[0]['total']
-        
-        
 
     def combine(self,phonenumber,gt,lt,type_dev):
         self.type_dev = type_dev
@@ -99,11 +83,7 @@ class Statistic():
         light_dict = {'total': 0,'day_average':0,'data_points':{},'device_usage': []}
         for device in list_statistic:
             light_dict['total']+= device['total']
-            isOver = None
-            if(self.LastDayRecord > self.anal_total(device['device_id'])):
-                isOver = True
-            else: isOver = False
-            light_dict['device_usage'].append({'device_name':device['device_name'],'total':device['total'],'isOverUsed':isOver})
+            light_dict['device_usage'].append({'device_name':device['device_name'],'total':device['total'],'isOverUsed':device['mean']})
             for i in device['data_points']:
                 if i.strftime("%d/%m/%Y") in light_dict['data_points']:
                     light_dict['data_points'][i.strftime("%d/%m/%Y")] += device['data_points'][i]
@@ -116,11 +96,7 @@ class Statistic():
         fan_dict = {'total': 0,'day_average':0,'data_points':{},'device_usage': []}
         for device in list_statistic:
             fan_dict['total']+= device['total']
-            isOver = None
-            if(device['mean'] > self.anal_total(device['device_id'])):
-                isOver = True
-            else: isOver = False
-            fan_dict['device_usage'].append({'device_name':device['device_name'],'total':device['total'],'isOverUsed':isOver})
+            fan_dict['device_usage'].append({'device_name':device['device_name'],'total':device['total'],'isOverUsed':device['mean']})
             for i in device['data_points']:
                 if i.strftime("%d/%m/%Y") in fan_dict['data_points']:
                     fan_dict['data_points'][i.strftime("%d/%m/%Y")] += device['data_points'][i]

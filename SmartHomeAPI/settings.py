@@ -89,7 +89,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'djongo',
         'NAME': 'smarthome1dot0',
-        'ENFORCE_SCHEMA': True,
+        'ENFORCE_SCHEMA': False,
         'CLIENT': {
            'host': os.getenv('DATABASE_URL'),
         }

@@ -80,3 +80,13 @@ class History(models.Model):
     value = models.CharField(max_length=10,blank=False,null=False)
     unit = models.CharField(max_length=10,blank=False,null=False)
     objects = models.DjongoManager()
+
+
+class HomeInformation(models.Model):
+    phone_number =  models.CharField(max_length=30,blank=False,null=False,unique=True,default="required phone number")
+    educa = models.IntegerField(null=False,validators=[MaxValueValidator(6),MinValueValidator(0)])
+    wk_stat = models.IntegerField(null=False,validators=[MaxValueValidator(5),MinValueValidator(1)])
+    num_mem = models.IntegerField(null=False,validators=[MaxValueValidator(20),MinValueValidator(0)])
+    res_type = models.IntegerField(null=False,validators=[MaxValueValidator(19),MinValueValidator(0)])
+    income = models.IntegerField(null=False,validators=[MaxValueValidator(6),MinValueValidator(1)])
+    objects = models.DjongoManager()
