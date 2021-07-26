@@ -161,8 +161,9 @@ class Statistic():
                     listDay_embedDatasInDay[record['time'].date()].append({'value':record['value'],'time':record['time']})
         if self.type_dev == 'light' or self.type_dev == 'fan':
             prevDay = False
-            for filteredRecord in listDay_embedDatasInDay:
+            for filteredRecord in sorted(listDay_embedDatasInDay.keys()) :
                 anal_inserted = self.anal_DayRecord_Fan_Light(listDay_embedDatasInDay[filteredRecord],prevDay,filteredRecord)
+                print(listDay_embedDatasInDay[filteredRecord])
                 res.update(anal_inserted[0])
                 prevDay = anal_inserted[1]
             self.LastDayRecord = res[date_list[0]]
@@ -203,6 +204,7 @@ class Statistic():
         '''
         
         isOn = previousDay
+        print(isOn)
         previous_time = None
         end_day = datetime.combine(filterDay,time=time(23,59,59))
         if isOn:
@@ -214,7 +216,6 @@ class Statistic():
                 if isOn:
                     deltatime = eachStatus['time'] - previous_time
                     totalTime_1day += deltatime
-                    # print(eachStatus['time'])
                 isOn = False    
             else:
                 if not isOn:
