@@ -34,17 +34,19 @@ class StatisticManager(SmartHomeAuthView):
         # change this later for custom range
         if range_date == 'week':
             result = ajaxpreload.calculate(claimedPhoneNumber,1,None,device_type)
-            for i in result[device_type]["device_usage"]:
-                if i["isOverUsed"] > predictResult:
-                    i["isOverUsed"] = True
-                else: i["isOverUsed"] = False
+            if(device_type == 'light' or device_type=='fan'):
+                for i in result[device_type]["device_usage"]:
+                    if i["isOverUsed"] > predictResult:
+                        i["isOverUsed"] = True
+                    else: i["isOverUsed"] = False
             return JsonResponse(result, safe=False,  status=status.HTTP_202_ACCEPTED)
         elif range_date == 'month':
             result = ajaxpreload.calculate(claimedPhoneNumber,None,1,device_type)
-            for i in result[device_type]["device_usage"]:
-                if i["isOverUsed"] > predictResult:
-                    i["isOverUsed"] = True
-                else: i["isOverUsed"] = False
+            if(device_type == 'light' or device_type=='fan'):
+                for i in result[device_type]["device_usage"]:
+                    if i["isOverUsed"] > predictResult:
+                        i["isOverUsed"] = True
+                    else: i["isOverUsed"] = False
             return JsonResponse(result, safe=False,  status=status.HTTP_202_ACCEPTED)
         return JsonResponse({}, safe=False,  status=status.HTTP_404_NOT_FOUND)
 
