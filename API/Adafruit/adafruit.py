@@ -101,7 +101,11 @@ def define_on_disconnected():
 def handleOnMessage(topic_id, payload, accesses, feedNameToUsername):
     save = datetime.now()
     # find device_id from database, it easier but need to implement later
-    device = Device.objects.get(feed_name=topic_id)
+    try:
+        device = Device.objects.get(feed_name=topic_id)
+    except Exception as e:
+        # Uninterested data
+        return
     device_serialized = DeviceDetailSerializer(device).data
     phone_number = device_serialized["phone_number"]
     this_home = db['API_home'].find_one({'phone_number':phone_number})
