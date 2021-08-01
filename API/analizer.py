@@ -8,6 +8,8 @@ from datetime import datetime, timedelta,time,date
 
 from pymongo import results
 from .mongo import db 
+from . import models
+
 
 def anal_payload(topic_id,time,payload,device_id):
     data_analed = literal_eval(payload)
@@ -52,6 +54,7 @@ class Statistic():
         self.type_dev = type_dev
         self.devices = list(db['API_device'].find({'phone_number':phonenumber}))
         res = {}
+        date_range=(gt,lt)
         if(type_dev == 'light'):
             list_light = [{'id':str(a_dict['_id']),'device_name':a_dict['device_name']} for a_dict in self.devices if a_dict['device_type'] == 'light']
             list_type = [a_dict['id'] for a_dict in list_light]
@@ -163,7 +166,6 @@ class Statistic():
             prevDay = False
             for filteredRecord in sorted(listDay_embedDatasInDay.keys()) :
                 anal_inserted = self.anal_DayRecord_Fan_Light(listDay_embedDatasInDay[filteredRecord],prevDay,filteredRecord)
-                print(listDay_embedDatasInDay[filteredRecord])
                 res.update(anal_inserted[0])
                 prevDay = anal_inserted[1]
             self.LastDayRecord = res[date_list[0]]
@@ -204,7 +206,6 @@ class Statistic():
         '''
         
         isOn = previousDay
-        print(isOn)
         previous_time = None
         end_day = datetime.combine(filterDay,time=time(23,59,59))
         if isOn:
